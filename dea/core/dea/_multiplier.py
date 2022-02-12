@@ -75,7 +75,7 @@ def solve_multiplier(
     m, k = x.shape
     n = y.shape[0]
 
-    c, A_ub, b_ub, A_eq, b_eq = construct_lpp(x, y, orientation, rts)
+    c, A_ub, b_ub, A_eq, b_eq = construct_lpp(x, y, orientation, rts, eps=eps)
     # inefficient_dmu = find_inefficient(x, y)
     #
     # efficient_dmu = np.ones(k, dtype=bool)

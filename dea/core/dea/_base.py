@@ -43,7 +43,7 @@ def check_options(
 
 def validate_data(x: ArrayLike, y: ArrayLike):
     x_shape, y_shape = x.shape, y.shape
-    if x_shape != y_shape:
+    if x_shape[0] != y_shape[0]:
         raise ValueError(
             f"Inputs and Outputs contain different number of DNU. Inputs: {x_shape[0]}, Outputs: {y_shape[0]}"
         )

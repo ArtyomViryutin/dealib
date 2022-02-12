@@ -41,5 +41,16 @@ def benchmark(inputs: np.ndarray, outputs: np.ndarray, n: int) -> None:
 
 
 if __name__ == "__main__":
-    idata, odata = get_banks("banks1")
-    benchmark(idata, odata, n=10)
+    idata, odata = get_charnes()
+    res1 = dea(
+        idata, odata, model=Model.multiplier, orientation=Orientation.input, rts=RTS.crs
+    )
+    res2 = dea(
+        idata,
+        odata,
+        model=Model.multiplier,
+        orientation=Orientation.output,
+        rts=RTS.crs,
+    )
+    print(res1.efficiency[:10])
+    print(res2.efficiency[:10])
