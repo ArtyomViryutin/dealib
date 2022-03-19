@@ -2,7 +2,8 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from dea.core import RTS, Model, Orientation, dea
+
+from python_dea.dea import RTS, Model, Orientation, add, dea
 
 
 def get_charnes():
@@ -46,20 +47,16 @@ def benchmark(inputs: np.ndarray, outputs: np.ndarray, n: int) -> None:
 
 
 if __name__ == "__main__":
-    idata, odata = get_charnes()
-    res1 = dea(
-        idata,
-        odata,
-        model=Model.multiplier,
-        orientation=Orientation.input,
-        rts=RTS.crs,
-    )
-    res2 = dea(
-        idata,
-        odata,
-        model=Model.multiplier,
-        orientation=Orientation.output,
-        rts=RTS.crs,
-    )
-    print(res1.efficiency[:10])
-    print(res2.efficiency[:10])
+    # idata, odata = get_charnes()
+    idata = np.array([[4, 2], [2, 4], [4, 6]])
+    odata = np.array([[4], [4], [2]])
+    # idata = np.array([[2], [3], [2], [4], [6], [5], [6], [8]])
+    # odata = np.array([[1], [3], [2], [3], [5], [2], [3], [5]])
+    for rts in [RTS.drs]:
+        res = add(
+            idata,
+            odata,
+            rts=rts,
+        )
+        print()
+        print(f"{rts}: {res.efficiency}")

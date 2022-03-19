@@ -1,6 +1,6 @@
 __all__ = ["solve_envelopment"]
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -8,8 +8,8 @@ from tqdm import trange
 
 from python_dea.linprog import simplex
 
-from ._options import RTS, Orientation
-from ._wrappers import DEAResult
+from .._options import RTS, Orientation
+from .._wrappers import DEAResult
 
 
 def construct_lpp(
@@ -17,7 +17,7 @@ def construct_lpp(
     y: NDArray[float],
     orientation: Orientation,
     rts: RTS,
-):
+) -> Tuple[NDArray, ...]:
     m, k = x.shape
     n = y.shape[0]
 
@@ -42,9 +42,11 @@ def construct_lpp(
         elif rts == RTS.drs:
             A_ub = np.vstack((A_ub, rts_constraint))
             b_ub = np.append(b_ub, [1])
-        elif rts == rts.irs:
+        elif rts == RTS.irs:
             A_ub = np.vstack((A_ub, -rts_constraint))
             b_ub = np.append(b_ub, [-1])
+        else:
+            raise NotImplementedError
     return c, A_ub, b_ub, A_eq, b_eq
 
 
@@ -175,7 +177,6 @@ def solve_envelopment(
             )
         efficiency[i] = lpp_result.x[-1]
         lambdas[i, eff_dmu] = lpp_result.x[:-1]
-        slack[i] = lpp_result.slack[: m + n]
         slack[i] = lpp_result.slack[: m + n]
 
         if eff_dmu[i]:

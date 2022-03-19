@@ -1,2 +1,1 @@
-from . import linprog
-from .core import *
+from . import dea, linprog

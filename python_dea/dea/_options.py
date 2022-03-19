@@ -1,9 +1,9 @@
-__all__ = ["Orientation", "RTS", "Model"]
+__all__ = ["RTS", "Orientation", "Model"]
 
-from enum import Enum, auto
+import enum
 
 
-class BaseEnum(Enum):
+class BaseEnum(enum.Enum):
     @classmethod
     def get(cls, val):
         if not isinstance(val, cls):
@@ -19,18 +19,18 @@ class BaseEnum(Enum):
         return self.name
 
 
-class Orientation(BaseEnum):
-    input = auto()
-    output = auto()
-
-
 class RTS(BaseEnum):
-    vrs = auto()
-    crs = auto()
-    drs = auto()
-    irs = auto()
+    vrs = 0
+    crs = 1
+    drs = 2
+    irs = 3
+
+
+class Orientation(BaseEnum):
+    input = 0
+    output = 1
 
 
 class Model(BaseEnum):
-    envelopment = auto()
-    multiplier = auto()
+    envelopment = 0
+    multiplier = 1

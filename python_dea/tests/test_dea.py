@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from python_dea import RTS, Model, Orientation, dea
+from python_dea.dea import RTS, Model, Orientation, dea
 
 BASE_DIR = Path(__file__).parent
 

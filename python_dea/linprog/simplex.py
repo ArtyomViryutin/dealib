@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from python_dea.linprog.wrappers import LPPResult
+from .wrappers import LPPResult
 
 
 def _pivot_col(
@@ -52,43 +52,6 @@ def _apply_pivot(
             T[iter_row] = T[iter_row] - T[pivot_row] * T[iter_row, pivot_col]
 
 
-def _get_canonical_form(
-    c: NDArray[float],
-    A_ub,
-    b_ub,
-    A_eq,
-    b_eq,
-    opt_f: bool,
-    opt_slacks: bool,
-    eps: float,
-) -> Tuple[NDArray[float], ...]:
-    m_ub, n_ub = A_ub.shape
-    if np.any(A_eq):
-        m_eq = A_eq.shape[0]
-    else:
-        m_eq = 0
-    if m_eq > 0:
-        A = np.vstack(
-            (
-                np.hstack((A_ub, np.eye(m_ub))),
-                np.hstack((A_eq, np.zeros((m_eq, m_ub)))),
-            )
-        )
-        b = np.hstack((b_ub, b_eq))
-    else:
-        A = np.hstack((A_ub, np.eye(m_ub)))
-        b = b_ub.copy()
-    if opt_f and opt_slacks:
-        c = np.hstack((c, eps * np.ones(m_ub)))
-    elif not opt_f and opt_slacks:
-        c = np.hstack((np.zeros(n_ub), np.ones(m_ub)))
-    elif opt_f and not opt_slacks:
-        c = np.hstack((c, np.zeros(m_ub)))
-    else:
-        raise NotImplementedError
-    return A, b, c
-
-
 def _solve_simplex(
     T: NDArray[float],
     basis: NDArray[float],
@@ -128,6 +91,44 @@ def _solve_simplex(
                 _apply_pivot(T, basis, pivot_row, pivot_col)  # noqa
                 nit += 1
     return nit
+
+
+def _get_canonical_form(
+    c: NDArray[float],
+    A_ub,
+    b_ub,
+    A_eq,
+    b_eq,
+    opt_f: bool,
+    opt_slacks: bool,
+    eps: float,
+) -> Tuple[NDArray[float], ...]:
+    m_ub, n_ub = A_ub.shape
+    if np.any(A_eq):
+        m_eq = A_eq.shape[0]
+    else:
+        m_eq = 0
+
+    if m_eq > 0:
+        A = np.vstack(
+            (
+                np.hstack((A_ub, np.eye(m_ub))),
+                np.hstack((A_eq, np.zeros((m_eq, m_ub)))),
+            )
+        )
+        b = np.hstack((b_ub, b_eq))
+    else:
+        A = np.hstack((A_ub, np.eye(m_ub)))
+        b = b_ub.copy()
+    if opt_f and opt_slacks:
+        c = np.hstack((c, eps * np.ones(m_ub)))
+    elif not opt_f and opt_slacks:
+        c = np.hstack((np.zeros(n_ub), np.ones(m_ub)))
+    elif opt_f and not opt_slacks:
+        c = np.hstack((c, np.zeros(m_ub)))
+    else:
+        raise NotImplementedError
+    return A, b, c
 
 
 def simplex(

@@ -5,8 +5,8 @@ from tqdm import trange
 
 from python_dea.linprog import simplex
 
-from ._options import RTS, Orientation
-from ._wrappers import DEAResult
+from .._options import RTS, Orientation
+from .._wrappers import DEAResult
 
 
 def construct_lpp(
