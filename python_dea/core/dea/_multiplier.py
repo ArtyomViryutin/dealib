@@ -3,7 +3,7 @@ __all__ = ["solve_multiplier"]
 import numpy as np
 from tqdm import trange
 
-from dea.linprog import simplex
+from python_dea.linprog import simplex
 
 from ._options import RTS, Orientation
 from ._wrappers import DEAResult

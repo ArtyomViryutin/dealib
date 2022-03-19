@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from dea import RTS, Model, Orientation, dea
+from python_dea import RTS, Model, Orientation, dea
 
 BASE_DIR = Path(__file__).parent
 
@@ -38,10 +38,15 @@ def test_dea_envelopment(banks, reference, mismatches):
     tol = 1e-6
     for o in Orientation:
         for r in RTS:
-            res = dea(inputs, outputs, model=Model.envelopment, orientation=o, rts=r)
+            res = dea(
+                inputs, outputs, model=Model.envelopment, orientation=o, rts=r
+            )
             if o == Orientation.input:
                 assert np.all(res.efficiency <= 1 + tol)
             else:
                 assert np.all(res.efficiency >= 1 - tol)
             ref = np.asarray(reference[str(o)][str(r)])
-            assert np.count_nonzero(np.abs(ref - res.efficiency) > tol) <= mismatches
+            assert (
+                np.count_nonzero(np.abs(ref - res.efficiency) > tol)
+                <= mismatches
+            )

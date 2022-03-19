@@ -1,9 +1,13 @@
 [tool.poetry]
-name = "python-DEA"
-version = "0.0.1"
+name = "python-dea"
+version = "0.1.0"
 description = "Library for basic Data Envelopment Analysis (DEA)"
-authors = ["Artyom Viryutin <artem.viryutin@edu.hse.ru>"]
+authors = ["Artyom Viryutin <avviryutin@edu.hse.ru>"]
 license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/ArtyomViryutin/DEA"
+repository = "https://github.com/ArtyomViryutin/DEA"
+keywords = ["DEA", "efficiency"]
 
 [tool.poetry.dependencies]
 python = "^3.8"

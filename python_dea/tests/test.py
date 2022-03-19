@@ -2,7 +2,6 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-
 from dea.core import RTS, Model, Orientation, dea
 
 
@@ -34,7 +33,13 @@ def benchmark(inputs: np.ndarray, outputs: np.ndarray, n: int) -> None:
             total = 0
             for i in range(n):
                 start = datetime.now()
-                dea(inputs, outputs, model=Model.envelopment, orientation=o, rts=r)
+                dea(
+                    inputs,
+                    outputs,
+                    model=Model.envelopment,
+                    orientation=o,
+                    rts=r,
+                )
                 end = datetime.now()
                 total += (end - start).total_seconds()
             print(f"{o}-{r}: {total / n:.3f}s")
@@ -43,7 +48,11 @@ def benchmark(inputs: np.ndarray, outputs: np.ndarray, n: int) -> None:
 if __name__ == "__main__":
     idata, odata = get_charnes()
     res1 = dea(
-        idata, odata, model=Model.multiplier, orientation=Orientation.input, rts=RTS.crs
+        idata,
+        odata,
+        model=Model.multiplier,
+        orientation=Orientation.input,
+        rts=RTS.crs,
     )
     res2 = dea(
         idata,

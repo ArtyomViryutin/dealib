@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from dea.linprog.wrappers import LPPResult
+from python_dea.linprog.wrappers import LPPResult
 
 
 def _pivot_col(
@@ -28,7 +28,9 @@ def _pivot_row(
         k = 2
     else:
         k = 1
-    ma = np.ma.masked_where(T[:-k, pivot_col] <= tol, T[:-k, pivot_col], copy=False)
+    ma = np.ma.masked_where(
+        T[:-k, pivot_col] <= tol, T[:-k, pivot_col], copy=False
+    )
     if ma.count() == 0:
         return False, np.nan
     mb = np.ma.masked_where(T[:-k, pivot_col] <= tol, T[:-k, -1], copy=False)
@@ -51,7 +53,14 @@ def _apply_pivot(
 
 
 def _get_canonical_form(
-    c: NDArray[float], A_ub, b_ub, A_eq, b_eq, opt_f: bool, opt_slacks: bool, eps: float
+    c: NDArray[float],
+    A_ub,
+    b_ub,
+    A_eq,
+    b_eq,
+    opt_f: bool,
+    opt_slacks: bool,
+    eps: float,
 ) -> Tuple[NDArray[float], ...]:
     m_ub, n_ub = A_ub.shape
     if np.any(A_eq):
@@ -60,7 +69,10 @@ def _get_canonical_form(
         m_eq = 0
     if m_eq > 0:
         A = np.vstack(
-            (np.hstack((A_ub, np.eye(m_ub))), np.hstack((A_eq, np.zeros((m_eq, m_ub)))))
+            (
+                np.hstack((A_ub, np.eye(m_ub))),
+                np.hstack((A_eq, np.zeros((m_eq, m_ub)))),
+            )
         )
         b = np.hstack((b_ub, b_eq))
     else:
@@ -92,7 +104,9 @@ def _solve_simplex(
             row for row in range(basis.size) if basis[row] > T.shape[1] - 2
         ]:
             non_zero_row = [
-                col for col in range(T.shape[1] - 1) if abs(T[pivot_row, col]) > tol
+                col
+                for col in range(T.shape[1] - 1)
+                if abs(T[pivot_row, col]) > tol
             ]
             if len(non_zero_row) > 0:
                 pivot_col = non_zero_row[0]
@@ -129,7 +143,9 @@ def simplex(
     tol: float = 1e-9,
 ) -> LPPResult:
     init_m, init_n = A_ub.shape
-    A, b, c = _get_canonical_form(c, A_ub, b_ub, A_eq, b_eq, opt_f, opt_slacks, eps=eps)
+    A, b, c = _get_canonical_form(
+        c, A_ub, b_ub, A_eq, b_eq, opt_f, opt_slacks, eps=eps
+    )
     m, n = A.shape
 
     is_negative_constraint = np.less(b, 0)

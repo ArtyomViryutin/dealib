@@ -6,7 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 from tqdm import trange
 
-from dea.linprog import simplex
+from python_dea.linprog import simplex
 
 from ._options import RTS, Orientation
 from ._wrappers import DEAResult
@@ -69,7 +69,15 @@ def solve_one_phase(
     tol: float,
 ):
     return simplex(
-        c, A_ub, b_ub, A_eq, b_eq, opt_f=True, opt_slacks=True, eps=eps, tol=tol
+        c,
+        A_ub,
+        b_ub,
+        A_eq,
+        b_eq,
+        opt_f=True,
+        opt_slacks=True,
+        eps=eps,
+        tol=tol,
     )
 
 
@@ -86,7 +94,15 @@ def solve_two_phase(
     tol: float,
 ):
     lpp_result = simplex(
-        c, A_ub, b_ub, A_eq, b_eq, opt_f=True, opt_slacks=False, eps=eps, tol=tol
+        c,
+        A_ub,
+        b_ub,
+        A_eq,
+        b_eq,
+        opt_f=True,
+        opt_slacks=False,
+        eps=eps,
+        tol=tol,
     )
     e = lpp_result.x[-1]
     if orientation == Orientation.input:
@@ -96,7 +112,15 @@ def solve_two_phase(
         b_ub[m : m + n] = A_ub[m : m + n, -1] * e
         A_ub[m : m + n, -1] = 0
     lpp_result = simplex(
-        c, A_ub, b_ub, A_eq, b_eq, opt_f=False, opt_slacks=True, eps=eps, tol=tol
+        c,
+        A_ub,
+        b_ub,
+        A_eq,
+        b_eq,
+        opt_f=False,
+        opt_slacks=True,
+        eps=eps,
+        tol=tol,
     )
     lpp_result.x[-1] = e
     return lpp_result
@@ -128,7 +152,9 @@ def solve_envelopment(
     efficiency = np.zeros(k)
     lambdas = np.zeros((k, k))
     slack = np.zeros((k, m + n))
-    for i in trange(k, desc=f"Computing {orientation}-{rts} envelopment model"):
+    for i in trange(
+        k, desc=f"Computing {orientation}-{rts} envelopment model"
+    ):
         if orientation == Orientation.input:
             A_ub[:m, -1] = -x[:, i]
             A_ub[m : m + n, -1] = 0
@@ -144,7 +170,9 @@ def solve_envelopment(
                 c, A_ub, b_ub, A_eq, b_eq, orientation, m, n, eps=eps, tol=tol
             )
         else:
-            lpp_result = solve_one_phase(c, A_ub, b_ub, A_eq, b_eq, eps=eps, tol=tol)
+            lpp_result = solve_one_phase(
+                c, A_ub, b_ub, A_eq, b_eq, eps=eps, tol=tol
+            )
         efficiency[i] = lpp_result.x[-1]
         lambdas[i, eff_dmu] = lpp_result.x[:-1]
         slack[i] = lpp_result.slack[: m + n]

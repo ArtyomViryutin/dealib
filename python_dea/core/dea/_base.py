@@ -2,7 +2,7 @@ __all__ = ["dea"]
 from typing import Tuple
 
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
 from ._envelopment import solve_envelopment
 from ._exceptions import OptionsError, WrongDataFormatError
@@ -11,7 +11,9 @@ from ._options import RTS, Model, Orientation
 from ._wrappers import DEAResult
 
 
-def rescale_data(data: np.ndarray, tol: float) -> Tuple[np.ndarray, np.ndarray]:
+def rescale_data(
+    data: np.ndarray, tol: float
+) -> Tuple[np.ndarray, np.ndarray]:
     data_std = data.std(axis=0)
     data_std[data_std < tol] = 1
     data = np.divide(data, data_std)
@@ -41,7 +43,7 @@ def check_options(
         )
 
 
-def validate_data(x: ArrayLike, y: ArrayLike):
+def validate_data(x: NDArray, y: NDArray):
     x_shape, y_shape = x.shape, y.shape
     if x_shape[0] != y_shape[0]:
         raise ValueError(
