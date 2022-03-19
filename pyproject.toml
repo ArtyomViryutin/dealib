@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "python-DEA"
+version = "0.0.1"
+description = "Library for basic Data Envelopment Analysis (DEA)"
+authors = ["Artyom Viryutin <artem.viryutin@edu.hse.ru>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+numpy = "^1.22.3"
+tqdm = "^4.63.0"
+
+[tool.poetry.dev-dependencies]
+pre-commit = "^2.17.0"
+pytest = "^7.1.1"
+pandas = "^1.4.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+line_length = 79
+
+[tool.black]
+line-length = 79
+target-version = ['py36']
+exclude = '''
+(
+  /(
+      \.git
+  )/
+)
+'''
