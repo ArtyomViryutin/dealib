@@ -12,11 +12,13 @@ from ._exceptions import OptionsError, WrongDataFormatError
 from ._options import Model
 
 
-def validate_data(x: NDArray, y: NDArray):
+def validate_data(x: NDArray[float], y: NDArray[float]):
     x_shape, y_shape = x.shape, y.shape
+
     if x_shape[0] != y_shape[0]:
         raise ValueError(
-            f"Inputs and Outputs contain different number of DNU. Inputs: {x_shape[0]}, Outputs: {y_shape[0]}"
+            f"Inputs and Outputs contain different number of DNU. "
+            f"Inputs: {x_shape[0]}, Outputs: {y_shape[0]}"
         )
     if len(x_shape) != 2:
         raise WrongDataFormatError("Inputs array must be two dimensional")

@@ -1,12 +1,44 @@
-__all__ = ["DEAResult"]
-
-from dataclasses import dataclass
+__all__ = ["Efficiency"]
 
 import numpy as np
+from numpy.typing import NDArray
+
+from ._options import RTS, Model, Orientation
 
 
-@dataclass
-class DEAResult:
-    efficiency: np.ndarray
-    lambdas: np.ndarray
-    slack: np.ndarray
+class Efficiency:
+    def __init__(
+        self,
+        model: Model,
+        orientation: Orientation,
+        rts: RTS,
+        k: int,
+        m: int,
+        n: int,
+    ):
+        self.model = model
+        self.orientation: Orientation = orientation
+        self.rts: RTS = rts
+        self.k = k
+        self.m = m
+        self.n = n
+        self.eff: NDArray[float] = np.zeros(k)
+        self.objval: NDArray[float] = np.zeros(k)
+        if model == Model.envelopment:
+            self.lambdas: NDArray[float] = np.zeros((k, k))
+            self.slack: NDArray[float] = np.zeros((k, m + n))
+        else:
+            self.lambdas: NDArray[float] = np.zeros((k, m + n))
+            self.slack: NDArray[float] = np.zeros((k, k))
+
+    @property
+    def sx(self):
+        if self.model == Model.multiplier:
+            raise ValueError("Multiplier efficiency has not sx")
+        return self.slack[: self.m]
+
+    @property
+    def sy(self):
+        if self.model == Model.multiplier:
+            raise ValueError("Multiplier efficiency has not sy")
+        return self.slack[self.m : self.m + self.n]

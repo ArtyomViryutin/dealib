@@ -1,59 +1,63 @@
 __all__ = ["solve_multiplier"]
 
 import numpy as np
+from numpy.typing import NDArray
 from tqdm import trange
 
+from python_dea.dea._options import RTS, Model, Orientation
+from python_dea.dea._wrappers import Efficiency
 from python_dea.linprog import simplex
-
-from .._options import RTS, Orientation
-from .._wrappers import DEAResult
+from python_dea.linprog.wrappers import LPP
 
 
 def construct_lpp(
-    x: np.ndarray,
-    y: np.ndarray,
-    orientation: Orientation,  # noqa
+    x: NDArray[float],
+    y: NDArray[float],
     rts: RTS,
     eps: float,
-):
+) -> LPP:
+    lpp = LPP()
     m, k = x.shape
     n = y.shape[0]
-    c = np.zeros(m + n)
-    A_ub = np.vstack(
+    lpp.c = np.zeros(m + n)
+    lpp.A_ub = np.vstack(
         (
             np.hstack((-x.transpose(), y.transpose())),
             -np.eye(m + n),
         )
     )
-    b_ub = np.hstack((np.zeros(k), -np.full(m + n, eps)))
-    A_eq = np.array([np.zeros(m + n)])
-    b_eq = np.ones(1)
+    lpp.b_ub = np.hstack((np.zeros(k), -np.full(m + n, eps)))
+    lpp.A_eq = np.array([np.zeros(m + n)])
+    lpp.b_eq = np.ones(1)
     if rts == RTS.irs:
-        c = np.append(c, 1)
-        A_ub = np.hstack(
-            (A_ub, np.hstack((np.ones(k), np.zeros(m + n)))[:, np.newaxis])
+        lpp.c = np.append(lpp.c, 1)
+        lpp.A_ub = np.hstack(
+            (lpp.A_ub, np.hstack((np.ones(k), np.zeros(m + n)))[:, np.newaxis])
         )
-        A_eq = np.array([np.append(A_eq[0], 0)])
+        lpp.A_eq = np.array([np.append(lpp.A_eq[0], 0)])
     elif rts == RTS.drs:
-        c = np.append(c, -1)
-        A_ub = np.hstack(
-            (A_ub, np.hstack((-np.ones(k), np.zeros(m + n)))[:, np.newaxis])
-        )
-        A_eq = np.array([np.append(A_eq[0], 0)])
-    elif rts == RTS.vrs:
-        c = np.append(c, [1, -1])
-        A_ub = np.hstack(
+        lpp.c = np.append(lpp.c, -1)
+        lpp.A_ub = np.hstack(
             (
-                A_ub,
+                lpp.A_ub,
+                np.hstack((-np.ones(k), np.zeros(m + n)))[:, np.newaxis],
+            )
+        )
+        lpp.A_eq = np.array([np.append(lpp.A_eq[0], 0)])
+    elif rts == RTS.vrs:
+        lpp.c = np.append(lpp.c, [1, -1])
+        lpp.A_ub = np.hstack(
+            (
+                lpp.A_ub,
                 np.hstack((np.ones(k), np.zeros(m + n)))[:, np.newaxis],
                 np.hstack((-np.ones(k), np.zeros(m + n)))[:, np.newaxis],
             )
         )
-        A_eq = np.array([np.append(A_eq[0], np.zeros(2))])
-    return c, A_ub, b_ub, A_eq, b_eq
+        lpp.A_eq = np.array([np.append(lpp.A_eq[0], np.zeros(2))])
+    return lpp
 
 
-# def find_inefficient(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+# def find_inefficient(x: NDArray[float], y: NDArray[float]) -> NDArray[float]:
 #     k = x.shape[1]
 #     inefficient_dmu = []
 #     for i in range(k):
@@ -65,17 +69,17 @@ def construct_lpp(
 
 
 def solve_multiplier(
-    x: np.ndarray,
-    y: np.ndarray,
+    x: NDArray[float],
+    y: NDArray[float],
     orientation: Orientation,
     rts: RTS,
     eps: float,
     tol: float,
-):
+) -> Efficiency:
     m, k = x.shape
     n = y.shape[0]
 
-    c, A_ub, b_ub, A_eq, b_eq = construct_lpp(x, y, orientation, rts, eps=eps)
+    lpp = construct_lpp(x, y, rts, eps=eps)
     # inefficient_dmu = find_inefficient(x, y)
     #
     # efficient_dmu = np.ones(k, dtype=bool)
@@ -85,31 +89,26 @@ def solve_multiplier(
     # current_efficient_count = 0
     # current_inefficient_count = inefficient_dmu.size
 
-    efficiency = np.zeros(k)
-    lambdas = np.zeros((k, m + n))
-    slack = np.zeros((k, k))
+    eff = Efficiency(Model.multiplier, orientation, rts, k, m, n)
 
     for i in trange(k, desc=f"Computing {orientation}-{rts} multiplier model"):
         if orientation == Orientation.input:
-            c[m : m + n] = y[:, i]
-            A_eq[0][:m] = x[:, i]
+            lpp.c[m : m + n] = y[:, i]
+            lpp.A_eq[0][:m] = x[:, i]
         else:
-            c[:m] = -x[:, i]
-            A_eq[0][m : m + n] = y[:, i]
+            lpp.c[:m] = -x[:, i]
+            lpp.A_eq[0][m : m + n] = y[:, i]
         lpp_result = simplex(
-            c,
-            A_ub,
-            b_ub,
-            A_eq,
-            b_eq,
+            lpp,
             opt_f=True,
             opt_slacks=False,
             eps=eps,
             tol=tol,
         )
-        efficiency[i] = abs(lpp_result.f)
-        lambdas[i] = lpp_result.x[: m + n]
-        slack[i] = lpp_result.slack[:k]
+        eff.eff[i] = abs(lpp_result.f)
+        eff.lambdas[i] = lpp_result.x[: m + n]
+        eff.slack[i] = lpp_result.slack[:k]
+
         # slack[i, efficient_dmu] = lpp_result.slack[:k - current_inefficient_count]
         #
         # if efficient_dmu[i]:
@@ -120,5 +119,5 @@ def solve_multiplier(
         #         current_inefficient_count += 1
         #     else:
         #         current_efficient_count += 1
-
-    return DEAResult(efficiency, lambdas, slack)
+    eff.objval = eff.eff
+    return eff

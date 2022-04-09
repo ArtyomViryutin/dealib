@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from .wrappers import LPPResult
+from .wrappers import LPP, LPPResult
 
 
 def _pivot_col(
@@ -94,59 +94,49 @@ def _solve_simplex(
 
 
 def _get_canonical_form(
-    c: NDArray[float],
-    A_ub,
-    b_ub,
-    A_eq,
-    b_eq,
+    lpp: LPP,
     opt_f: bool,
     opt_slacks: bool,
     eps: float,
 ) -> Tuple[NDArray[float], ...]:
-    m_ub, n_ub = A_ub.shape
-    if np.any(A_eq):
-        m_eq = A_eq.shape[0]
+    m_ub, n_ub = lpp.A_ub.shape
+    if np.any(lpp.A_eq):
+        m_eq = lpp.A_eq.shape[0]
     else:
         m_eq = 0
 
     if m_eq > 0:
         A = np.vstack(
             (
-                np.hstack((A_ub, np.eye(m_ub))),
-                np.hstack((A_eq, np.zeros((m_eq, m_ub)))),
+                np.hstack((lpp.A_ub, np.eye(m_ub))),
+                np.hstack((lpp.A_eq, np.zeros((m_eq, m_ub)))),
             )
         )
-        b = np.hstack((b_ub, b_eq))
+        b = np.hstack((lpp.b_ub, lpp.b_eq))
     else:
-        A = np.hstack((A_ub, np.eye(m_ub)))
-        b = b_ub.copy()
+        A = np.hstack((lpp.A_ub, np.eye(m_ub)))
+        b = lpp.b_ub.copy()
     if opt_f and opt_slacks:
-        c = np.hstack((c, eps * np.ones(m_ub)))
+        c = np.hstack((lpp.c, eps * np.ones(m_ub)))
     elif not opt_f and opt_slacks:
         c = np.hstack((np.zeros(n_ub), np.ones(m_ub)))
     elif opt_f and not opt_slacks:
-        c = np.hstack((c, np.zeros(m_ub)))
+        c = np.hstack((lpp.c, np.zeros(m_ub)))
     else:
         raise NotImplementedError
     return A, b, c
 
 
 def simplex(
-    c: NDArray[float],
-    A_ub: NDArray[float],
-    b_ub: NDArray[float],
-    A_eq: Optional[NDArray[float]],
-    b_eq: Optional[NDArray[float]],
+    lpp: LPP,
     opt_f: bool = True,
     opt_slacks: bool = False,
     maxiter: int = 1000,
     eps: float = 1e-6,
     tol: float = 1e-9,
 ) -> LPPResult:
-    init_m, init_n = A_ub.shape
-    A, b, c = _get_canonical_form(
-        c, A_ub, b_ub, A_eq, b_eq, opt_f, opt_slacks, eps=eps
-    )
+    init_m, init_n = lpp.A_ub.shape
+    A, b, c = _get_canonical_form(lpp, opt_f, opt_slacks, eps=eps)
     m, n = A.shape
 
     is_negative_constraint = np.less(b, 0)
