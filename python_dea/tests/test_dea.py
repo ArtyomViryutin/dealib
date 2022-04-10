@@ -25,27 +25,35 @@ def reference(request):
         return json.load(f)
 
 
+@pytest.mark.parametrize("two_phase", [True, False])
 @pytest.mark.parametrize(
     "data, reference, mismatches",
     [
-        ["charnes", "charnes.json", 0],
+        ["charnes", "charnes.json", 1],
         ["banks1", "banks1.json", 0],
         ["banks2", "banks2.json", 0],
         ["banks3", "banks3.json", 1],
     ],
     indirect=["data", "reference"],
 )
-def test_dea_envelopment(data, reference, mismatches):
+def test_dea_envelopment(data, reference, mismatches, two_phase):
     inputs, outputs = data
     benchmark(
-        dea, inputs, outputs, Model.envelopment, reference, mismatches, 1e-6
+        dea,
+        inputs,
+        outputs,
+        Model.envelopment,
+        reference,
+        mismatches,
+        1e-6,
+        two_phase=two_phase,
     )
 
 
 @pytest.mark.parametrize(
     "data, reference, mismatches",
     [
-        ["charnes", "charnes.json", 0],
+        ["charnes", "charnes.json", 1],
         ["banks1", "banks1.json", 4],
     ],
     indirect=["data", "reference"],

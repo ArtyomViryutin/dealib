@@ -11,10 +11,15 @@ from ._wrappers import Efficiency
 
 
 def pre_process_data(
-    inputs: ArrayLike, outputs: ArrayLike, tol: float
+    inputs: ArrayLike, outputs: ArrayLike, transpose: bool, tol: float
 ) -> Tuple[NDArray[float], ...]:
     x = np.asarray(inputs)
     y = np.asarray(outputs)
+
+    if transpose:
+        x = x.transpose()
+        y = y.transpose()
+
     validate_data(x, y)
     x_mean, y_mean = x.mean(axis=0), y.mean(axis=0)
     if (

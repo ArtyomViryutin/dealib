@@ -31,7 +31,7 @@ def reference(request):
     ],
     indirect=["data", "reference"],
 )
-def test_dea_envelopment(data, reference, mismatches):
+def test_add(data, reference, mismatches):
     inputs, outputs = data
     for r in RTS:
         eff = add(inputs, outputs, rts=r)

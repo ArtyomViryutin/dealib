@@ -1,9 +1,10 @@
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from python_dea.dea import RTS, Model, Orientation, add, dea
+from python_dea.dea import RTS, Efficiency, Model, Orientation, add, dea, slack
 
 
 def benchmark(inputs: NDArray[float], outputs: NDArray[float], n: int) -> None:
@@ -35,6 +36,24 @@ def get_data(name: str):
 
 
 if __name__ == "__main__":
-    x, y = get_data("charnes")
-    eff = add(x, y, rts=RTS.vrs)
-    print(eff.objval)
+    # TODO надо найти данные чтоб проверять оптимизацию слаков
+    # x, y = get_data("banks3")
+    # eff1 = dea(x, y, two_phase=True)
+    # eff2 = dea(x, y)
+    x = [[1, 5], [2, 2], [4, 1], [6, 1], [4, 4]]
+    y = [[2], [2], [2], [2], [2]]
+    eff = Efficiency(
+        model=Model.envelopment,
+        orientation=Orientation.input,
+        rts=RTS.vrs,
+        k=5,
+        m=2,
+        n=1,
+    )
+    eff.eff = np.array([1, 1, 1, 1, 0.5])
+    eff1 = slack(x, y, eff)
+    print(eff1.slack)
+    eff2 = dea(x, y)
+    print(eff2.slack)
+    # print(eff1.slack[np.abs(eff1.slack - eff2.slack) > 0.0001])
+    # print(eff2.slack[np.abs(eff1.slack - eff2.slack) > 0.0001])

@@ -20,6 +20,7 @@ def dea(
     model: Model = Model.envelopment,
     slacks: bool = False,
     two_phase: bool = False,
+    transpose: bool = False,
     eps: float = 1e-6,
     tol: float = 1e-9,
 ) -> Efficiency:
@@ -32,7 +33,7 @@ def dea(
 
     validate_options(model, slacks, two_phase)
 
-    x, y, x_std, y_std = pre_process_data(inputs, outputs, tol)
+    x, y, x_std, y_std = pre_process_data(inputs, outputs, transpose, tol)
 
     if model == Model.envelopment:
         efficiency = solve_envelopment(
