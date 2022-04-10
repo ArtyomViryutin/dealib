@@ -27,13 +27,11 @@ def construct_lpp(
     lpp.c = np.zeros(k + 1)
     lpp.c[-1] = 1
     lpp.b_ub = np.zeros(m + n)
-    lpp.A_ub = np.hstack((np.vstack((x, y)), np.zeros(m + n)[:, np.newaxis]))
+    lpp.A_ub = np.hstack((np.vstack((x, -y)), np.zeros(m + n)[:, np.newaxis]))
 
     if orientation == Orientation.input:
         lpp.c[-1] = -1
-        lpp.A_ub[m:] *= -1
-    else:
-        lpp.A_ub[m:, :-1] *= -1
+
     if rts != RTS.crs:
         rts_constraint = np.ones(k + 1)
         rts_constraint[-1] = 0

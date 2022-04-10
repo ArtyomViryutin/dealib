@@ -23,7 +23,7 @@ def validate_data(x: NDArray[float], y: NDArray[float]):
     if len(x_shape) != 2:
         raise WrongDataFormatError("Inputs array must be two dimensional")
     if len(y_shape) != 2:
-        raise WrongDataFormatError("Inputs array must be two dimensional")
+        raise WrongDataFormatError("Outputs array must be two dimensional")
     if np.any(np.less(x, 0)):
         raise WrongDataFormatError("All inputs must be non-negative")
     if np.any(np.less(y, 0)):
