@@ -11,6 +11,8 @@ from python_dea.dea._wrappers import Efficiency
 from python_dea.linprog import simplex
 from python_dea.linprog.wrappers import LPP
 
+from .._slack import slack
+
 
 def construct_lpp(
     x: NDArray[float],
@@ -59,53 +61,6 @@ def find_inefficient_dmu(x: NDArray[float], y: NDArray[float]) -> List[int]:
     return inefficient_dmu
 
 
-def solve_one_phase(
-    lpp: LPP,
-    eps: float,
-    tol: float,
-):
-    return simplex(
-        lpp,
-        opt_f=True,
-        opt_slacks=True,
-        eps=eps,
-        tol=tol,
-    )
-
-
-def solve_two_phase(
-    lpp: LPP,
-    orientation: Orientation,
-    m: int,
-    n: int,
-    eps: float,
-    tol: float,
-):
-    lpp_result = simplex(
-        lpp,
-        opt_f=True,
-        opt_slacks=False,
-        eps=eps,
-        tol=tol,
-    )
-    e = lpp_result.x[-1]
-    if orientation == Orientation.input:
-        lpp.b_ub[:m] = -lpp.A_ub[:m, -1] * e
-        lpp.A_ub[:m, -1] = 0
-    else:
-        lpp.b_ub[m : m + n] = lpp.A_ub[m : m + n, -1] * e
-        lpp.A_ub[m : m + n, -1] = 0
-    lpp_result = simplex(
-        lpp,
-        opt_f=False,
-        opt_slacks=True,
-        eps=eps,
-        tol=tol,
-    )
-    lpp_result.x[-1] = e
-    return lpp_result
-
-
 def solve_envelopment(
     x: NDArray[float],
     y: NDArray[float],
@@ -145,11 +100,11 @@ def solve_envelopment(
             lpp.b_ub[:m] = x[:, i]
             lpp.b_ub[m : m + n] = 0
         if two_phase:
-            lpp_result = solve_two_phase(
-                lpp, orientation, m, n, eps=eps, tol=tol
-            )
+            lpp_result = simplex(lpp, opt_f=True, opt_slacks=False, tol=tol)
         else:
-            lpp_result = solve_one_phase(lpp, eps=eps, tol=tol)
+            lpp_result = simplex(
+                lpp, opt_f=True, opt_slacks=True, eps=eps, tol=tol
+            )
         eff.eff[i] = lpp_result.x[-1]
         eff.lambdas[i, eff_dmu] = lpp_result.x[:-1]
         eff.slack[i] = lpp_result.slack[: m + n]
@@ -163,5 +118,7 @@ def solve_envelopment(
                     lpp.A_eq = np.delete(lpp.A_eq, eff_dmu_count, axis=1)
             else:
                 eff_dmu_count += 1
+    if two_phase:
+        eff = slack(x, y, eff, transpose=True, tol=tol)
     eff.objval = eff.eff
     return eff

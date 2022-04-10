@@ -1,27 +1,25 @@
-__all__ = ["benchmark"]
+__all__ = ["get_data", "get_reference", "parametrize_options"]
 
-from typing import Callable
+import json
+from pathlib import Path
 
-import numpy as np
-from numpy.typing import NDArray
-
-from python_dea.dea import RTS, Model, Orientation
+import pandas as pd
+import pytest
 
 
-def benchmark(
-    f: Callable,
-    inputs: NDArray[float],
-    outputs: NDArray[float],
-    model: Model,
-    reference: dict,
-    mismatches: int,
-    tol: float,
-    **kwargs,
-) -> None:
-    for o in Orientation:
-        for r in RTS:
-            eff = f(
-                inputs, outputs, model=model, orientation=o, rts=r, **kwargs
-            )
-            ref = np.asarray(reference[str(o)][str(r)])
-            assert np.count_nonzero(np.abs(ref - eff.eff) > tol) <= mismatches
+def parametrize_options(options, name):
+    return pytest.mark.parametrize(name, [o for o in options])
+
+
+def get_data(folder_name: str):
+    directory = Path(__file__).parent / "data" / f"{folder_name}"
+    inputs = pd.read_csv(directory / "inputs.csv")
+    outputs = pd.read_csv(directory / "outputs.csv")
+    return inputs, outputs
+
+
+def get_reference(folder_name: str, filename: str):
+    with open(
+        Path(__file__).parent / "reference" / folder_name / filename
+    ) as f:
+        return json.load(f)

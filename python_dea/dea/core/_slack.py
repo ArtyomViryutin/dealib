@@ -3,7 +3,7 @@ __all__ = ["slack"]
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from python_dea.dea._options import RTS, Model
+from python_dea.dea._options import RTS, Orientation
 from python_dea.dea._utils import post_process_data, pre_process_data
 from python_dea.dea._wrappers import Efficiency
 from python_dea.linprog import LPP, simplex
@@ -42,8 +42,12 @@ def solve_slack(
     lpp = construct_lpp(x, y, eff.rts)
 
     for i in range(k):
-        lpp.b_ub[:m] = x[:, i] * eff.eff[i]
-        lpp.b_ub[m : m + n] = -y[:, i] * eff.eff[i]
+        lpp.b_ub[:m] = x[:, i]
+        lpp.b_ub[m : m + n] = -y[:, i]
+        if eff.orientation == Orientation.input:
+            lpp.b_ub[:m] *= eff.eff[i]
+        else:
+            lpp.b_ub[m : m + n] *= eff.eff[i]
 
         lpp_result = simplex(lpp, opt_f=False, opt_slacks=True, tol=tol)
 
@@ -65,6 +69,6 @@ def slack(
 
     eff = solve_slack(x, y, eff, tol)
 
-    post_process_data(eff, x_std, y_std, model=Model.envelopment)
+    post_process_data(eff, x_std, y_std, model=eff.model)
 
     return eff
