@@ -14,7 +14,6 @@ def construct_lpp(
     x: NDArray[float],
     y: NDArray[float],
     rts: RTS,
-    eps: float,
 ) -> LPP:
     lpp = LPP()
     m, k = x.shape
@@ -26,7 +25,7 @@ def construct_lpp(
             -np.eye(m + n),
         )
     )
-    lpp.b_ub = np.hstack((np.zeros(k), -np.full(m + n, eps)))
+    lpp.b_ub = np.hstack((np.zeros(k), -np.full(m + n, 1e-6)))
     lpp.A_eq = np.array([np.zeros(m + n)])
     lpp.b_eq = np.ones(1)
     if rts == RTS.irs:
@@ -73,13 +72,11 @@ def solve_multiplier(
     y: NDArray[float],
     orientation: Orientation,
     rts: RTS,
-    eps: float,
-    tol: float,
 ) -> Efficiency:
     m, k = x.shape
     n = y.shape[0]
 
-    lpp = construct_lpp(x, y, rts, eps=eps)
+    lpp = construct_lpp(x, y, rts)
     # inefficient_dmu = find_inefficient(x, y)
     #
     # efficient_dmu = np.ones(k, dtype=bool)
@@ -102,8 +99,6 @@ def solve_multiplier(
             lpp,
             opt_f=True,
             opt_slacks=False,
-            eps=eps,
-            tol=tol,
         )
         eff.eff[i] = abs(lpp_result.f)
         eff.lambdas[i] = lpp_result.x[: m + n]
@@ -112,7 +107,7 @@ def solve_multiplier(
         # slack[i, efficient_dmu] = lpp_result.slack[:k - current_inefficient_count]
         #
         # if efficient_dmu[i]:
-        #     if np.abs(1 - efficiency[i]) > tol:
+        #     if np.abs(1 - efficiency[i]) > 1e-9:
         #         efficient_dmu[i] = False
         #         A_ub = np.delete(A_ub, current_efficient_count, axis=0)
         #         b_ub = np.delete(b_ub, current_efficient_count)

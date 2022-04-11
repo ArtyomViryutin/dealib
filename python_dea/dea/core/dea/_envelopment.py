@@ -65,8 +65,6 @@ def solve_envelopment(
     orientation: Orientation,
     rts: RTS,
     two_phase: bool,
-    eps: float,
-    tol: float,
 ) -> Efficiency:
     m, k = x.shape
     n = y.shape[0]
@@ -98,17 +96,15 @@ def solve_envelopment(
             lpp.b_ub[:m] = x[:, i]
             lpp.b_ub[m : m + n] = 0
         if two_phase:
-            lpp_result = simplex(lpp, opt_f=True, opt_slacks=False, tol=tol)
+            lpp_result = simplex(lpp, opt_f=True, opt_slacks=False)
         else:
-            lpp_result = simplex(
-                lpp, opt_f=True, opt_slacks=True, eps=eps, tol=tol
-            )
+            lpp_result = simplex(lpp, opt_f=True, opt_slacks=True)
         eff.eff[i] = lpp_result.x[-1]
         eff.lambdas[i, eff_dmu] = lpp_result.x[:-1]
         eff.slack[i] = lpp_result.slack[: m + n]
 
         if eff_dmu[i]:
-            if np.abs(1 - eff.eff[i]) > tol:
+            if np.abs(1 - eff.eff[i]) > 1e-9:
                 eff_dmu[i] = False
                 lpp.c = np.delete(lpp.c, eff_dmu_count)
                 lpp.A_ub = np.delete(lpp.A_ub, eff_dmu_count, axis=1)
@@ -117,6 +113,6 @@ def solve_envelopment(
             else:
                 eff_dmu_count += 1
     if two_phase:
-        eff = slack(x, y, eff, transpose=True, tol=tol)
+        eff = slack(x, y, eff, transpose=True)
     eff.objval = eff.eff
     return eff

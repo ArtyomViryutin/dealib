@@ -11,7 +11,7 @@ from ._wrappers import Efficiency
 
 
 def pre_process_data(
-    inputs: ArrayLike, outputs: ArrayLike, transpose: bool, tol: float
+    inputs: ArrayLike, outputs: ArrayLike, transpose: bool
 ) -> Tuple[NDArray[float], ...]:
     x = np.asarray(inputs)
     y = np.asarray(outputs)
@@ -29,11 +29,11 @@ def pre_process_data(
         or max(y_mean) > 1000
     ):
         x_std = x.std(axis=0)
-        x_std[x_std < tol] = 1
+        x_std[x_std < 1e-9] = 1
         x = np.divide(x, x_std)
 
         y_std = y.std(axis=0)
-        y_std[y_std < tol] = 1
+        y_std[y_std < 1e-9] = 1
         y = np.divide(y, y_std)
     else:
         x_std = np.ones(x.shape[1])
@@ -45,17 +45,16 @@ def pre_process_data(
 def post_process_data(
     eff: Efficiency, x_std: NDArray[float], y_std: NDArray[float], model: Model
 ) -> None:
-    tol = 1e-5
     if model == Model.envelopment:
         eff.slack = np.multiply(eff.slack, np.hstack((x_std, y_std)))
     else:
         eff.lambdas = np.divide(eff.lambdas, np.hstack((x_std, y_std)))
 
-    eff.lambdas[eff.lambdas < tol] = 0
-    eff.slack[eff.slack < tol] = 0
+    eff.lambdas[eff.lambdas < 1e-5] = 0
+    eff.slack[eff.slack < 1e-5] = 0
 
-    eff.objval[np.abs(eff.objval) < tol] = 0
-    eff.objval[np.abs(eff.objval - 1) < tol] = 1
+    eff.objval[np.abs(eff.objval) < 1e-5] = 0
+    eff.objval[np.abs(eff.objval - 1) < 1e-5] = 1
 
-    eff.eff[np.abs(eff.eff) < tol] = 0
-    eff.eff[np.abs(eff.eff - 1) < tol] = 1
+    eff.eff[np.abs(eff.eff) < 1e-5] = 0
+    eff.eff[np.abs(eff.eff - 1) < 1e-5] = 1

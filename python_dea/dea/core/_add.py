@@ -13,7 +13,6 @@ def add(
     inputs: ArrayLike,
     outputs: ArrayLike,
     rts: RTS = RTS.vrs,
-    tol: float = 1e-9,
 ) -> Efficiency:
     rts = RTS.get(rts)
 
@@ -26,6 +25,6 @@ def add(
 
     eff.eff = np.ones(k)
 
-    eff = slack(x, y, eff, tol=tol)
+    eff = slack(x, y, eff)
 
     return eff

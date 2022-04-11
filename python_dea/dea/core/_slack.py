@@ -34,7 +34,7 @@ def construct_lpp(x: NDArray[float], y: NDArray[float], rts: RTS) -> LPP:
 
 
 def solve_slack(
-    x: NDArray[float], y: NDArray[float], eff: Efficiency, tol: float
+    x: NDArray[float], y: NDArray[float], eff: Efficiency
 ) -> Efficiency:
     m, k = x.shape
     n = y.shape[0]
@@ -49,7 +49,7 @@ def solve_slack(
         else:
             lpp.b_ub[m : m + n] *= eff.eff[i]
 
-        lpp_result = simplex(lpp, opt_f=False, opt_slacks=True, tol=tol)
+        lpp_result = simplex(lpp, opt_f=False, opt_slacks=True)
 
         eff.objval[i] = lpp_result.f
         eff.lambdas[i] = lpp_result.x
@@ -63,11 +63,10 @@ def slack(
     outputs: ArrayLike,
     eff: Efficiency,
     transpose: bool = False,
-    tol: float = 1e-9,
 ):
-    x, y, x_std, y_std = pre_process_data(inputs, outputs, transpose, tol)
+    x, y, x_std, y_std = pre_process_data(inputs, outputs, transpose)
 
-    eff = solve_slack(x, y, eff, tol)
+    eff = solve_slack(x, y, eff)
 
     post_process_data(eff, x_std, y_std, model=eff.model)
 

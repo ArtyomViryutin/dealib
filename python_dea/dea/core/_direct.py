@@ -50,13 +50,11 @@ def direct(
     rts: RTS = RTS.vrs,
     two_phase: bool = False,
     transpose: bool = False,
-    eps: float = 1e-6,
-    tol: float = 1e-9,
 ) -> Efficiency:
     orientation = Orientation.get(orientation)
     rts = RTS.get(rts)
 
-    x, y, x_std, y_std = pre_process_data(inputs, outputs, transpose, tol)
+    x, y, x_std, y_std = pre_process_data(inputs, outputs, transpose)
 
     if orientation == Orientation.input:
         direct_ = np.divide(direct_, x_std)
@@ -82,17 +80,15 @@ def direct(
             lpp.A_ub[m : m + n, -1] = eff.direct
 
         if two_phase:
-            lpp_result = simplex(lpp, opt_f=True, opt_slacks=False, tol=tol)
+            lpp_result = simplex(lpp, opt_f=True, opt_slacks=False)
         else:
-            lpp_result = simplex(
-                lpp, opt_f=True, opt_slacks=True, eps=eps, tol=tol
-            )
+            lpp_result = simplex(lpp, opt_f=True, opt_slacks=True)
         eff.objval[i] = lpp_result.x[-1]
         eff.lambdas[i, :] = lpp_result.x[:-1]
         eff.slack[i] = lpp_result.slack[: m + n]
 
     if two_phase:
-        eff = slack(x, y, eff, transpose=True, tol=tol)
+        eff = slack(x, y, eff, transpose=True)
 
     m = np.outer(eff.objval, eff.direct)
     if eff.orientation == Orientation.input:
