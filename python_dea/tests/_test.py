@@ -1,14 +1,12 @@
 from datetime import datetime
 
 import numpy as np
-import numpy.linalg
 import pandas as pd
 from numpy.typing import NDArray
 
 from python_dea.dea import (
     RTS,
     Efficiency,
-    Model,
     Orientation,
     add,
     dea,
@@ -26,7 +24,6 @@ def benchmark(inputs: NDArray[float], outputs: NDArray[float], n: int) -> None:
                 dea(
                     inputs,
                     outputs,
-                    model=Model.envelopment,
                     orientation=o,
                     rts=r,
                 )

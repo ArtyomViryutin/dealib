@@ -1,4 +1,4 @@
-__all__ = ["RTS", "Orientation", "Model"]
+__all__ = ["RTS", "Orientation"]
 
 import enum
 
@@ -29,8 +29,3 @@ class RTS(BaseEnum):
 class Orientation(BaseEnum):
     input = 0
     output = 1
-
-
-class Model(BaseEnum):
-    envelopment = 0
-    multiplier = 1

@@ -1,1 +1,2 @@
-from . import dea, linprog
+from .dea import *
+from .linprog import *

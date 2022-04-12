@@ -1,33 +1,29 @@
 __all__ = ["Efficiency"]
 
-from typing import Optional
-
 import numpy as np
 from numpy.typing import NDArray
 
-from ._options import RTS, Model, Orientation
+from ._options import RTS, Orientation
 
 
 class Efficiency:
     def __init__(
         self,
-        model: Model,
-        orientation: Orientation,
         rts: RTS,
+        orientation: Orientation,
         k: int,
         m: int,
         n: int,
+        dual: bool = False,
     ):
-        self.model = model
-        self.orientation: Orientation = orientation
         self.rts: RTS = rts
+        self.orientation: Orientation = orientation
         self.k = k
         self.m = m
         self.n = n
-        self.direct: Optional[NDArray[float]] = None
         self.eff: NDArray[float] = np.zeros(k)
         self.objval: NDArray[float] = np.zeros(k)
-        if model == Model.envelopment:
+        if not dual:
             self.lambdas: NDArray[float] = np.zeros((k, k))
             self.slack: NDArray[float] = np.zeros((k, m + n))
         else:
@@ -36,12 +32,12 @@ class Efficiency:
 
     @property
     def sx(self):
-        if self.model != Model.envelopment:
-            raise ValueError("Multiplier efficiency has not sx")
+        if self.dual:
+            return None
         return self.slack[: self.m]
 
     @property
     def sy(self):
-        if self.model != Model.envelopment:
-            raise ValueError("Multiplier efficiency has not sy")
+        if self.dual:
+            return None
         return self.slack[self.m : self.m + self.n]

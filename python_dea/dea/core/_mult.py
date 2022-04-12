@@ -1,27 +1,28 @@
-__all__ = ["solve_multiplier"]
+__all__ = ["mult"]
+
+from typing import Union
 
 import numpy as np
-from numpy.typing import NDArray
-from tqdm import trange
+from numpy.typing import ArrayLike, NDArray
 
-from python_dea.dea._options import RTS, Model, Orientation
+from python_dea.dea._options import RTS, Orientation
 from python_dea.dea._wrappers import Efficiency
 from python_dea.linprog import simplex
 from python_dea.linprog.wrappers import LPP
 
 
 def construct_lpp(
-    x: NDArray[float],
-    y: NDArray[float],
+    xref: NDArray[float],
+    yref: NDArray[float],
     rts: RTS,
 ) -> LPP:
     lpp = LPP()
-    m, k = x.shape
-    n = y.shape[0]
+    k, m = xref.shape
+    n = yref.shape[1]
     lpp.c = np.zeros(m + n)
     lpp.A_ub = np.vstack(
         (
-            np.hstack((-x.transpose(), y.transpose())),
+            np.hstack((-xref, yref)),
             -np.eye(m + n),
         )
     )
@@ -67,14 +68,14 @@ def construct_lpp(
 #     return np.asarray(inefficient_dmu, dtype=int)
 
 
-def solve_multiplier(
+def solve_mult(
     x: NDArray[float],
     y: NDArray[float],
     orientation: Orientation,
     rts: RTS,
 ) -> Efficiency:
-    m, k = x.shape
-    n = y.shape[0]
+    k, m = x.shape
+    n = y.shape[1]
 
     lpp = construct_lpp(x, y, rts)
     # inefficient_dmu = find_inefficient(x, y)
@@ -86,15 +87,15 @@ def solve_multiplier(
     # current_efficient_count = 0
     # current_inefficient_count = inefficient_dmu.size
 
-    eff = Efficiency(Model.multiplier, orientation, rts, k, m, n)
+    eff = Efficiency(rts, orientation, k, m, n, dual=True)
 
-    for i in trange(k, desc=f"Computing {orientation}-{rts} multiplier model"):
+    for i in range(k):
         if orientation == Orientation.input:
-            lpp.c[m : m + n] = y[:, i]
-            lpp.A_eq[0][:m] = x[:, i]
+            lpp.c[m : m + n] = y[i, :]
+            lpp.A_eq[0][:m] = x[i, :]
         else:
-            lpp.c[:m] = -x[:, i]
-            lpp.A_eq[0][m : m + n] = y[:, i]
+            lpp.c[:m] = -x[i, :]
+            lpp.A_eq[0][m : m + n] = y[i, :]
         lpp_result = simplex(
             lpp,
             opt_f=True,
@@ -115,4 +116,54 @@ def solve_multiplier(
         #     else:
         #         current_efficient_count += 1
     eff.objval = eff.eff
+    return eff
+
+
+def mult(
+    x: Union[ArrayLike, NDArray[float]],
+    y: Union[ArrayLike, NDArray[float]],
+    rts: RTS = RTS.vrs,
+    orientation: Orientation = Orientation.input,
+    transpose: bool = False,
+) -> Efficiency:
+    rts = RTS.get(rts)
+    orientation = Orientation.get(orientation)
+
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    if transpose:
+        x = x.transpose()
+        y = y.transpose()
+
+    if x.shape[0] != y.shape[0]:
+        raise ValueError("Number of units must be the same in 'x' and 'y'")
+
+    xm, ym = x.mean(axis=0), y.mean(axis=0)
+    if min(xm) < 1e-4 or max(xm) > 10000 or min(ym) < 1e-4 or max(ym) > 10000:
+        scaling = True
+        xx, yy = x.std(axis=0), y.std(axis=0)
+        xx[xx < 1e-9] = 1
+        yy[yy < 1e-9] = 1
+        x = np.divide(x, xx)
+        y = np.divide(y, yy)
+    else:
+        scaling = False
+        xx = yy = None
+
+    eff = solve_mult(x, y, orientation, rts)
+
+    if scaling:
+        eff.lambdas = np.divide(eff.lambdas, np.hstack((xx, yy)))
+
+    eps = 1e-6
+    eff.lambdas[np.abs(eff.lambdas) < eps] = 0
+    eff.lambdas[np.abs(eff.lambdas - 1) < eps] = 1
+
+    eff.slack[np.abs(eff.slack) < eps] = 0
+
+    eff.eff = eff.objval.copy()
+    eff.eff[np.abs(eff.eff) < eps] = 0
+    eff.eff[np.abs(eff.eff - 1) < eps] = 1
+
     return eff

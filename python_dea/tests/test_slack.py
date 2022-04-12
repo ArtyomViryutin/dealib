@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from python_dea.dea import RTS, Efficiency, Model, Orientation, slack
+from python_dea.dea import RTS, Efficiency, Orientation, slack
 
 from .utils import get_data, get_reference, parametrize_options
 
@@ -22,7 +22,7 @@ def test_slack(orientation, rts, folder_name):
     ref_slack = np.asarray(ref["slack"])
     ref_eff = np.asarray(ref["eff"])
 
-    eff = Efficiency(Model.envelopment, orientation, rts, k, m, n)
+    eff = Efficiency(rts, orientation, k, m, n)
     eff.eff = ref_eff
     eff = slack(inputs, outputs, eff)
 

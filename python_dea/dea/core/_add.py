@@ -1,27 +1,29 @@
 __all__ = ["add"]
 
+from typing import Union
+
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 
 from python_dea.dea.core._slack import slack
 
-from .._options import RTS, Model, Orientation
+from .._options import RTS, Orientation
 from .._wrappers import Efficiency
 
 
 def add(
-    inputs: ArrayLike,
-    outputs: ArrayLike,
-    rts: RTS = RTS.vrs,
+    x: Union[ArrayLike, NDArray[float]],
+    y: Union[ArrayLike, NDArray[float]],
+    rts: Union[str, RTS] = RTS.vrs,
 ) -> Efficiency:
     rts = RTS.get(rts)
 
-    x, y = np.asarray(inputs), np.asarray(outputs)
+    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
 
     k, m = x.shape
     n = y.shape[1]
 
-    eff = Efficiency(Model.envelopment, Orientation.input, rts, k, m, n)
+    eff = Efficiency(rts, Orientation.input, k, m, n)
 
     eff.eff = np.ones(k)
 
