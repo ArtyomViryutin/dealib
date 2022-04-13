@@ -18,9 +18,6 @@ class Efficiency:
     ):
         self.rts: RTS = rts
         self.orientation: Orientation = orientation
-        self.k = k
-        self.m = m
-        self.n = n
         self.eff: NDArray[float] = np.zeros(k)
         self.objval: NDArray[float] = np.zeros(k)
         if not dual:

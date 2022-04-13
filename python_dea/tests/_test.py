@@ -63,5 +63,3 @@ if __name__ == "__main__":
         np.nan_to_num(x), y, d, orientation=Orientation.input, rts=RTS.vrs
     )
     print(eff.objval)
-    # print(eff.objval)
-    # print(eff.eff)

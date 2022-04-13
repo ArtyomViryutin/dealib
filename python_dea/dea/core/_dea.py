@@ -1,6 +1,6 @@
 __all__ = ["dea"]
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -9,11 +9,12 @@ from python_dea.dea._options import RTS, Orientation
 from python_dea.dea._wrappers import Efficiency
 from python_dea.linprog import LPP, simplex
 
-from .._utils import construct_lpp
+from .._utils import construct_lpp, process_result_efficiency, validate_data
 from ._slack import slack
 
 
-def construct_dea_lpp(
+def _construct_dea_lpp(
+    *,
     xref: NDArray[float],
     yref: NDArray[float],
     rts: RTS,
@@ -37,7 +38,8 @@ def construct_dea_lpp(
     return lpp
 
 
-def solve_dea(
+def _solve_dea(
+    *,
     x: NDArray[float],
     y: NDArray[float],
     rts: RTS,
@@ -47,10 +49,11 @@ def solve_dea(
     direct: Optional[NDArray[float]],
     two_phase: bool,
 ) -> Efficiency:
-    m, k = x.shape
+    m = x.shape[0]
+    k = x.shape[1]
     n = y.shape[0]
 
-    lpp = construct_dea_lpp(
+    lpp = _construct_dea_lpp(
         xref=xref, yref=yref, rts=rts, orientation=orientation, direct=direct
     )
 
@@ -132,33 +135,9 @@ def dea(
         xref = xref.transpose()
         yref = yref.transpose()
 
-    m = x.shape[1]
-    n = y.shape[1]
-    k = x.shape[0]
-
-    if m != xref.shape[1]:
-        raise ValueError("Number of inputs must be the same in 'x' and 'xref'")
-    if n != yref.shape[1]:
-        raise ValueError(
-            "Number of outputs must be the same in 'y' and 'yref'"
-        )
-    if k != y.shape[0]:
-        raise ValueError("Number of units must be the same in 'x' and 'y'")
-    if k != xref.shape[0]:
-        raise ValueError("Number of units must be the same in 'x' and 'xref'")
-    if k != yref.shape[0]:
-        raise ValueError("Number of units must be the same in 'x' and 'yref'")
-
-    if direct is not None:
-        direct = np.asarray(direct)
-        if orientation == Orientation.input and m != direct.shape[0]:
-            raise ValueError(
-                "Length of 'direct'' must be the number of inputs"
-            )
-        elif orientation == Orientation.output and n != direct.shape[0]:
-            raise ValueError(
-                "Length of 'direct'' must be the number of outputs"
-            )
+    validate_data(
+        x=x, y=y, xref=xref, yref=yref, orientation=orientation, direct=direct
+    )
 
     xref_m, yref_m = xref.mean(axis=0), yref.mean(axis=0)
     if (
@@ -189,7 +168,7 @@ def dea(
     xref = xref.transpose()
     yref = yref.transpose()
 
-    eff = solve_dea(
+    eff = _solve_dea(
         x=x,
         y=y,
         rts=rts,
@@ -201,19 +180,13 @@ def dea(
     )
 
     if two_phase:
-        eff = slack(x, y, eff, transpose=True)
+        eff = slack(
+            x=x, y=y, eff=eff, rts=rts, xref=xref, yref=yref, transpose=True
+        )
 
-    if scaling:
-        ss = np.hstack((xref_s, yref_s))
-        eff.slack = np.multiply(eff.slack, ss)
+    if scaling is True:
+        eff.slack = np.multiply(eff.slack, np.hstack((xref_s, yref_s)))
 
-    eps = 1e-6
-    eff.lambdas[np.abs(eff.lambdas) < eps] = 0
-    eff.lambdas[np.abs(eff.lambdas - 1) < eps] = 1
-
-    eff.slack[np.abs(eff.slack) < eps] = 0
-
-    eff.eff[np.abs(eff.eff) < eps] = 0
-    eff.eff[np.abs(eff.eff - 1) < eps] = 1
+    process_result_efficiency(eff)
 
     return eff

@@ -1,6 +1,6 @@
 __all__ = ["add"]
 
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -14,19 +14,18 @@ from .._wrappers import Efficiency
 def add(
     x: Union[ArrayLike, NDArray[float]],
     y: Union[ArrayLike, NDArray[float]],
+    *,
     rts: Union[str, RTS] = RTS.vrs,
+    xref: Optional[NDArray[float]] = None,
+    yref: Optional[NDArray[float]] = None,
+    transpose: Optional[bool] = False,
 ) -> Efficiency:
-    rts = RTS.get(rts)
-
-    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
-
-    k, m = x.shape
+    k = x.shape[0]
+    m = x.shape[1]
     n = y.shape[1]
-
     eff = Efficiency(rts, Orientation.input, k, m, n)
-
     eff.eff = np.ones(k)
 
-    eff = slack(x, y, eff)
+    eff = slack(x, y, eff, rts=rts, xref=xref, yref=yref, transpose=transpose)
 
     return eff

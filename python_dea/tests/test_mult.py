@@ -13,20 +13,22 @@ from .utils import get_data, get_reference, parametrize_options
     [
         ["simple", 0],
         ["charnes", 9],
-        ["banks1", 4],
+        # ["banks1", 4],
+        # ["banks2", 1]
     ],
     ids=[
         "simple-max-0-mismatches",
-        "charnes-max-5-mismatches",
-        "banks1-max-4-mismatches",
+        "charnes-max-2-mismatches",
+        # "banks1-max-4-mismatches",
+        # "banks2-max-0-mismatches",
     ],
 )
-def test_mult(orientation, rts, folder_name, mismatches):
-    inputs, outputs = get_data(folder_name)
+def test_mult(rts, orientation, folder_name, mismatches):
+    x, y = get_data(folder_name)
     reference = get_reference("dea", f"{folder_name}.json")
     eff = mult(
-        inputs,
-        outputs,
+        x,
+        y,
         orientation=orientation,
         rts=rts,
     )

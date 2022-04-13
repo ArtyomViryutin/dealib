@@ -9,6 +9,7 @@ from .wrappers import LPP, LPPResult
 
 
 def _pivot_col(
+    *,
     T: NDArray[float],
     tol: float,
 ) -> Tuple[bool, int]:
@@ -19,6 +20,7 @@ def _pivot_col(
 
 
 def _pivot_row(
+    *,
     T: NDArray[float],
     pivot_col: int,
     phase: int,
@@ -39,6 +41,7 @@ def _pivot_row(
 
 
 def _apply_pivot(
+    *,
     T: NDArray[float],
     basis: NDArray[float],
     pivot_row: int,
@@ -53,12 +56,13 @@ def _apply_pivot(
 
 
 def _solve_simplex(
+    *,
     T: NDArray[float],
     basis: NDArray[float],
     maxiter: int,
     phase: int,
     tol: float,
-    nit0: int = 0,
+    nit0: Optional[int] = 0,
 ):
     nit = nit0
     complete = False
@@ -73,27 +77,35 @@ def _solve_simplex(
             ]
             if len(non_zero_row) > 0:
                 pivot_col = non_zero_row[0]
-                _apply_pivot(T, basis, pivot_row, pivot_col)
+                _apply_pivot(
+                    T=T, basis=basis, pivot_row=pivot_row, pivot_col=pivot_col
+                )
                 nit += 1
 
     while not complete:
-        pivot_col_found, pivot_col = _pivot_col(T, tol)
+        pivot_col_found, pivot_col = _pivot_col(T=T, tol=tol)
         if not pivot_col_found:
             complete = True
         else:
-            pivot_row_found, pivot_row = _pivot_row(T, pivot_col, phase, tol)
+            pivot_row_found, pivot_row = _pivot_row(
+                T=T, pivot_col=pivot_col, phase=phase, tol=tol
+            )
             if not pivot_row_found:
                 complete = True
         if not complete:
             if nit >= maxiter:
                 complete = True
             else:
-                _apply_pivot(T, basis, pivot_row, pivot_col)  # noqa
+                # noinspection PyUnboundLocalVariable
+                _apply_pivot(
+                    T=T, basis=basis, pivot_row=pivot_row, pivot_col=pivot_col
+                )
                 nit += 1
     return nit
 
 
 def _get_canonical_form(
+    *,
     lpp: LPP,
     opt_f: bool,
     opt_slacks: bool,
@@ -129,14 +141,17 @@ def _get_canonical_form(
 
 def simplex(
     lpp: LPP,
-    opt_f: bool = True,
-    opt_slacks: bool = False,
-    maxiter: int = 1000,
-    eps: float = 1e-6,
-    tol: float = 1e-9,
+    *,
+    opt_f: Optional[bool] = True,
+    opt_slacks: Optional[bool] = False,
+    maxiter: Optional[int] = 1000,
+    eps: Optional[float] = 1e-6,
+    tol: Optional[float] = 1e-9,
 ) -> LPPResult:
     init_m, init_n = lpp.A_ub.shape
-    A, b, c = _get_canonical_form(lpp, opt_f, opt_slacks, eps=eps)
+    A, b, c = _get_canonical_form(
+        lpp=lpp, opt_f=opt_f, opt_slacks=opt_slacks, eps=eps
+    )
     m, n = A.shape
 
     is_negative_constraint = np.less(b, 0)
@@ -152,12 +167,14 @@ def simplex(
     T = np.vstack((row_constraints, row_objective, row_pseudo_objective))
 
     # Phase 1
-    nit1 = _solve_simplex(T, basis, maxiter=maxiter, phase=1, tol=tol)
+    nit1 = _solve_simplex(T=T, basis=basis, maxiter=maxiter, phase=1, tol=tol)
     T = np.delete(T, -1, axis=0)
     T = np.delete(T, av, axis=1)
 
     # Phase 2
-    _ = _solve_simplex(T, basis, maxiter=maxiter, phase=2, tol=tol, nit0=nit1)
+    _solve_simplex(
+        T=T, basis=basis, maxiter=maxiter, phase=2, tol=tol, nit0=nit1
+    )
     solution = np.zeros(n)
     solution[basis[:m]] = T[:m, -1]
     x = solution[:init_n]

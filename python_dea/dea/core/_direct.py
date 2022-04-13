@@ -18,13 +18,12 @@ def direct(
     two_phase: bool = False,
     transpose: bool = False,
 ):
-    eff = dea(
-        x,
-        y,
+    return dea(
+        x=x,
+        y=y,
         rts=rts,
         orientation=orientation,
         direct=direct_,
         two_phase=two_phase,
         transpose=transpose,
     )
-    return eff

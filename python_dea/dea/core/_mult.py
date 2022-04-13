@@ -1,6 +1,6 @@
 __all__ = ["mult"]
 
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -10,15 +10,19 @@ from python_dea.dea._wrappers import Efficiency
 from python_dea.linprog import simplex
 from python_dea.linprog.wrappers import LPP
 
+from .._utils import process_result_efficiency, validate_data
 
-def construct_lpp(
+
+def _construct_lpp(
     xref: NDArray[float],
     yref: NDArray[float],
     rts: RTS,
 ) -> LPP:
     lpp = LPP()
-    k, m = xref.shape
+    k = xref.shape[0]
+    m = xref.shape[1]
     n = yref.shape[1]
+
     lpp.c = np.zeros(m + n)
     lpp.A_ub = np.vstack(
         (
@@ -57,35 +61,19 @@ def construct_lpp(
     return lpp
 
 
-# def find_inefficient(x: NDArray[float], y: NDArray[float]) -> NDArray[float]:
-#     k = x.shape[1]
-#     inefficient_dmu = []
-#     for i in range(k):
-#         for j in range(k):
-#             if np.all(x[:, i] > x[:, j]) and np.all(y[:, i] < y[:, j]):
-#                 inefficient_dmu.append(i)
-#                 break
-#     return np.asarray(inefficient_dmu, dtype=int)
-
-
-def solve_mult(
+def _solve_mult(
     x: NDArray[float],
     y: NDArray[float],
-    orientation: Orientation,
     rts: RTS,
+    orientation: Orientation,
+    xref: NDArray[float],
+    yref: NDArray[float],
 ) -> Efficiency:
-    k, m = x.shape
-    n = y.shape[1]
+    k = xref.shape[0]
+    m = xref.shape[1]
+    n = yref.shape[1]
 
-    lpp = construct_lpp(x, y, rts)
-    # inefficient_dmu = find_inefficient(x, y)
-    #
-    # efficient_dmu = np.ones(k, dtype=bool)
-    # efficient_dmu[inefficient_dmu] = False
-    # A_ub = np.delete(A_ub, inefficient_dmu, axis=0)
-    # b_ub = np.delete(b_ub, inefficient_dmu)
-    # current_efficient_count = 0
-    # current_inefficient_count = inefficient_dmu.size
+    lpp = _construct_lpp(xref, yref, rts)
 
     eff = Efficiency(rts, orientation, k, m, n, dual=True)
 
@@ -101,29 +89,22 @@ def solve_mult(
             opt_f=True,
             opt_slacks=False,
         )
-        eff.eff[i] = abs(lpp_result.f)
+        eff.objval[i] = abs(lpp_result.f)
         eff.lambdas[i] = lpp_result.x[: m + n]
         eff.slack[i] = lpp_result.slack[:k]
 
-        # slack[i, efficient_dmu] = lpp_result.slack[:k - current_inefficient_count]
-        #
-        # if efficient_dmu[i]:
-        #     if np.abs(1 - efficiency[i]) > 1e-9:
-        #         efficient_dmu[i] = False
-        #         A_ub = np.delete(A_ub, current_efficient_count, axis=0)
-        #         b_ub = np.delete(b_ub, current_efficient_count)
-        #         current_inefficient_count += 1
-        #     else:
-        #         current_efficient_count += 1
-    eff.objval = eff.eff
+    eff.eff = eff.objval.copy()
     return eff
 
 
 def mult(
     x: Union[ArrayLike, NDArray[float]],
     y: Union[ArrayLike, NDArray[float]],
+    *,
     rts: RTS = RTS.vrs,
     orientation: Orientation = Orientation.input,
+    xref: Optional[NDArray[float]] = None,
+    yref: Optional[NDArray[float]] = None,
     transpose: bool = False,
 ) -> Efficiency:
     rts = RTS.get(rts)
@@ -132,38 +113,44 @@ def mult(
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
 
+    if xref is None:
+        xref = x.copy()
+    if yref is None:
+        yref = y.copy()
+
     if transpose:
         x = x.transpose()
         y = y.transpose()
+        xref = xref.transpose()
+        yref = yref.transpose()
 
-    if x.shape[0] != y.shape[0]:
-        raise ValueError("Number of units must be the same in 'x' and 'y'")
+    validate_data(x=x, y=y, xref=xref, yref=yref)
 
-    xm, ym = x.mean(axis=0), y.mean(axis=0)
-    if min(xm) < 1e-4 or max(xm) > 10000 or min(ym) < 1e-4 or max(ym) > 10000:
+    xref_m, yref_m = x.mean(axis=0), y.mean(axis=0)
+    if (
+        min(xref_m) < 1e-4
+        or max(xref_m) > 10000
+        or min(yref_m) < 1e-4
+        or max(yref_m) > 10000
+    ):
         scaling = True
-        xx, yy = x.std(axis=0), y.std(axis=0)
-        xx[xx < 1e-9] = 1
-        yy[yy < 1e-9] = 1
-        x = np.divide(x, xx)
-        y = np.divide(y, yy)
+        xref_s, yref_s = xref.std(axis=0), yref.std(axis=0)
+        xref_s[xref_s < 1e-9] = 1
+        yref_s[yref_s < 1e-9] = 1
+        x = np.divide(x, xref_s)
+        y = np.divide(y, yref_s)
+        xref = np.divide(xref, xref_s)
+        yref = np.divide(yref, yref_s)
     else:
         scaling = False
-        xx = yy = None
+        xref_s = yref_s = None
 
-    eff = solve_mult(x, y, orientation, rts)
+    eff = _solve_mult(
+        x=x, y=y, rts=rts, orientation=orientation, xref=xref, yref=yref
+    )
 
-    if scaling:
-        eff.lambdas = np.divide(eff.lambdas, np.hstack((xx, yy)))
+    if scaling is True:
+        eff.lambdas = np.divide(eff.lambdas, np.hstack((xref_s, yref_s)))
 
-    eps = 1e-6
-    eff.lambdas[np.abs(eff.lambdas) < eps] = 0
-    eff.lambdas[np.abs(eff.lambdas - 1) < eps] = 1
-
-    eff.slack[np.abs(eff.slack) < eps] = 0
-
-    eff.eff = eff.objval.copy()
-    eff.eff[np.abs(eff.eff) < eps] = 0
-    eff.eff[np.abs(eff.eff - 1) < eps] = 1
-
+    process_result_efficiency(eff)
     return eff

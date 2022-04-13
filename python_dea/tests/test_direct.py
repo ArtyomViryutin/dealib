@@ -26,10 +26,11 @@ from .utils import get_data, get_reference, parametrize_options
     ],
 )
 def test_direct(orientation, rts, folder_name, mismatches):
-    inputs, outputs = get_data(folder_name)
+    x, y = get_data(folder_name)
     reference = get_reference("direct", f"{folder_name}.json")
     vector = reference[orientation.name]["vector"]
-    eff = direct(inputs, outputs, vector, orientation=orientation, rts=rts)
+    eff = direct(x, y, vector, orientation=orientation, rts=rts)
+
     ref_objval = np.asarray(reference[orientation.name][rts.name]["objval"])
     ref_eff = np.asarray(reference[orientation.name][rts.name]["eff"])
     ref_eff[ref_eff == np.nan] = 0

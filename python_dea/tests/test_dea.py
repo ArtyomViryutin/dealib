@@ -29,11 +29,11 @@ from .utils import get_data, get_reference, parametrize_options
     "two_phase", [False, True], ids=["one_phase", "two_phase"]
 )
 def test_dea(orientation, rts, folder_name, mismatches, two_phase):
-    inputs, outputs = get_data(folder_name)
+    x, y = get_data(folder_name)
     reference = get_reference("dea", f"{folder_name}.json")
     eff = dea(
-        inputs,
-        outputs,
+        x,
+        y,
         orientation=orientation,
         rts=rts,
         two_phase=two_phase,
@@ -45,7 +45,7 @@ def test_dea(orientation, rts, folder_name, mismatches, two_phase):
     assert np.count_nonzero(np.abs(ref_eff - eff.eff) > 1e-4) <= mismatches
 
     threshold = np.mean(ref_slack) * 1e-3
-    m, n = inputs.shape[1], outputs.shape[1]
+    m, n = x.shape[1], y.shape[1]
     assert np.count_nonzero(
         np.abs(ref_slack - eff.slack) > threshold
     ) <= mismatches * (m + n)

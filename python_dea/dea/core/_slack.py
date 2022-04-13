@@ -1,6 +1,6 @@
 __all__ = ["slack"]
 
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -9,20 +9,29 @@ from python_dea.dea._options import RTS, Orientation
 from python_dea.dea._wrappers import Efficiency
 from python_dea.linprog import LPP, simplex
 
-from .._utils import construct_lpp
+from .._utils import construct_lpp, process_result_efficiency, validate_data
 
 
-def construct_slack_lpp(x: NDArray[float], y: NDArray[float], rts: RTS) -> LPP:
-    return construct_lpp(x, y, rts)
+def _construct_slack_lpp(
+    *, xref: NDArray[float], yref: NDArray[float], rts: RTS
+) -> LPP:
+    return construct_lpp(xref, yref, rts)
 
 
-def solve_slack(
-    x: NDArray[float], y: NDArray[float], eff: Efficiency
+def _solve_slack(
+    *,
+    x: NDArray[float],
+    y: NDArray[float],
+    eff: Efficiency,
+    rts: RTS,
+    xref: NDArray[float],
+    yref: NDArray[float],
 ) -> Efficiency:
-    m, k = x.shape
-    n = y.shape[0]
+    m = xref.shape[0]
+    k = xref.shape[1]
+    n = yref.shape[0]
 
-    lpp = construct_slack_lpp(x, y, eff.rts)
+    lpp = _construct_slack_lpp(xref=xref, yref=yref, rts=rts)
 
     for i in range(k):
         lpp.b_ub[:m] = x[:, i]
@@ -45,45 +54,56 @@ def slack(
     x: Union[ArrayLike, NDArray[float]],
     y: Union[ArrayLike, NDArray[float]],
     eff: Efficiency,
-    transpose: bool = False,
+    *,
+    rts: Optional[RTS] = RTS.vrs,
+    xref: Optional[NDArray[float]] = None,
+    yref: Optional[NDArray[float]] = None,
+    transpose: Optional[bool] = False,
 ):
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
 
+    if xref is None:
+        xref = x.copy()
+    if yref is None:
+        yref = y.copy()
+
     if transpose:
         x = x.transpose()
         y = y.transpose()
+        xref = xref.transpose()
+        yref = yref.transpose()
 
-    if x.shape[0] != y.shape[0]:
-        raise ValueError("Number of units must be the same in 'x' and 'y'")
+    validate_data(x=x, y=y, xref=xref, yref=yref)
 
-    xm, ym = x.mean(axis=0), y.mean(axis=0)
+    xref_m, yref_m = xref.mean(axis=0), yref.mean(axis=0)
     if (
-        np.min(xm) < 1e-4
-        or np.max(xm) > 10000
-        or np.min(ym) < 1e-4
-        or np.max(ym) > 10000
+        np.min(xref_m) < 1e-4
+        or np.max(xref_m) > 10000
+        or np.min(yref_m) < 1e-4
+        or np.max(yref_m) > 10000
     ):
         scaling = True
-        xx, yy = x.std(axis=0), y.std(axis=0)
-        xx[xx < 1e-9] = 1
-        yy[yy < 1e-9] = 1
-        x = np.divide(x, xx)
-        y = np.divide(y, yy)
+        xref_s, yref_s = xref.std(axis=0), yref.std(axis=0)
+        xref_s[xref_s < 1e-9] = 1
+        yref_s[yref_s < 1e-9] = 1
+        x = np.divide(x, xref_s)
+        y = np.divide(y, yref_s)
+        xref = np.divide(xref, xref_s)
+        yref = np.divide(yref, yref_s)
     else:
         scaling = False
-        xx = yy = None
+        xref_s = yref_s = None
 
     x = x.transpose()
     y = y.transpose()
+    xref = xref.transpose()
+    yref = yref.transpose()
 
-    eff = solve_slack(x, y, eff)
+    eff = _solve_slack(x=x, y=y, eff=eff, xref=xref, yref=yref, rts=rts)
 
-    if scaling:
-        eff.slack = np.multiply(eff.slack, np.hstack((xx, yy)))
+    if scaling is True:
+        eff.slack = np.multiply(eff.slack, np.hstack((xref_s, yref_s)))
 
-    eps = 1e-6
-    eff.lambdas[np.abs(eff.lambdas) < eps] = 0
-    eff.lambdas[np.abs(eff.lambdas - 1) < eps] = 1
-    eff.slack[np.abs(eff.slack) < eps] = 0
+    process_result_efficiency(eff)
     return eff
