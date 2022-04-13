@@ -18,7 +18,7 @@ def construct_dea_lpp(
     yref: NDArray[float],
     rts: RTS,
     orientation: Orientation,
-    direct: Optional[NDArray[float]] = None,
+    direct: Optional[NDArray[float]],
 ) -> LPP:
     lpp = construct_lpp(xref, yref, rts)
 
@@ -26,26 +26,15 @@ def construct_dea_lpp(
         (lpp.A_ub, np.zeros(lpp.A_ub.shape[0])[:, np.newaxis])
     )
 
-    if orientation == Orientation.input and not direct:
+    if orientation == Orientation.input and direct is None:
         lpp.c = np.append(lpp.c, -1)
     else:
         lpp.c = np.append(lpp.c, 1)
 
     if rts == RTS.vrs:
-        lpp.A_eq = np.array([np.append(lpp.A_eq[0], 0)])
+        lpp.A_eq = np.append(lpp.A_eq[0], 0)[np.newaxis, :]
 
     return lpp
-
-
-def find_inefficient_dmu(x: NDArray[float], y: NDArray[float]) -> List[int]:
-    k = x.shape[1]
-    inefficient_dmu = []
-    for i in range(k):
-        for j in range(k):
-            if (x[:, i] > x[:, j]).all() and (y[:, i] < y[:, j]).all():
-                inefficient_dmu.append(i)
-                break
-    return inefficient_dmu
 
 
 def solve_dea(
@@ -55,53 +44,62 @@ def solve_dea(
     orientation: Orientation,
     xref: NDArray[float],
     yref: NDArray[float],
+    direct: Optional[NDArray[float]],
     two_phase: bool,
 ) -> Efficiency:
     m, k = x.shape
     n = y.shape[0]
 
-    lpp = construct_dea_lpp(xref, yref, rts, orientation)
-    inefficient_dmu = find_inefficient_dmu(xref, yref)
+    lpp = construct_dea_lpp(
+        xref=xref, yref=yref, rts=rts, orientation=orientation, direct=direct
+    )
 
-    eff_dmu = np.ones(k, dtype=bool)
-    eff_dmu[inefficient_dmu] = False
-    lpp.c = np.delete(lpp.c, inefficient_dmu)
-    lpp.A_ub = np.delete(lpp.A_ub, inefficient_dmu, axis=1)
-    if lpp.A_eq is not None:
-        lpp.A_eq = np.delete(lpp.A_eq, inefficient_dmu, axis=1)
-
-    eff_dmu_count = 0
     eff = Efficiency(rts, orientation, k, m, n)
 
     for i in range(k):
-        if orientation == Orientation.input:
-            lpp.A_ub[:m, -1] = -x[:, i]
-            lpp.b_ub[m : m + n] = -y[:, i]
-        else:
-            lpp.A_ub[m : m + n, -1] = y[:, i]
+        if direct is not None:
             lpp.b_ub[:m] = x[:, i]
-
+            lpp.b_ub[m : m + n] = -y[:, i]
+            if orientation == Orientation.input:
+                lpp.A_ub[:m, -1] = direct
+                lpp.A_ub[m : m + n, -1] = 0
+            else:
+                lpp.A_ub[:m, -1] = 0
+                lpp.A_ub[m : m + n, -1] = direct
+        else:
+            if orientation == Orientation.input:
+                lpp.A_ub[:m, -1] = -x[:, i]
+                lpp.b_ub[m : m + n] = -y[:, i]
+            else:
+                lpp.A_ub[m : m + n, -1] = y[:, i]
+                lpp.b_ub[:m] = x[:, i]
         if two_phase:
             lpp_result = simplex(lpp, opt_f=True, opt_slacks=False)
         else:
             lpp_result = simplex(lpp, opt_f=True, opt_slacks=True)
-        eff.eff[i] = lpp_result.x[-1]
-        eff.lambdas[i, eff_dmu] = lpp_result.x[:-1]
+        eff.objval[i] = lpp_result.x[-1]
+        eff.lambdas[i] = lpp_result.x[:-1]
         eff.slack[i] = lpp_result.slack[: m + n]
 
-        # TODO можно ли так делать при том чот технологическое множество другое
-        # if eff_dmu[i]:
-        #     if np.abs(1 - eff.eff[i]) > 1e-9:
-        #         eff_dmu[i] = False
-        #         lpp.c = np.delete(lpp.c, eff_dmu_count)
-        #         lpp.A_ub = np.delete(lpp.A_ub, eff_dmu_count, axis=1)
-        #         if lpp.A_eq is not None:
-        #             lpp.A_eq = np.delete(lpp.A_eq, eff_dmu_count, axis=1)
-        #     else:
-        #         eff_dmu_count += 1
-    if two_phase:
-        eff = slack(x, y, eff, transpose=True)
-    eff.objval = eff.eff
+    if direct is not None:
+        mm = np.outer(eff.objval, direct)
+        if orientation == Orientation.input:
+            x_t = xref.transpose()
+            not_nulls = x_t != 0
+            mm[not_nulls] /= x_t[not_nulls]
+            mm[np.logical_not(not_nulls)] = np.inf
+            eff.eff = 1 - mm
+        else:
+            y_t = yref.transpose()
+            not_nulls = y_t != 0
+            mm[not_nulls] /= y_t[not_nulls]
+            mm[np.logical_not(not_nulls)] = np.inf
+            eff.eff = 1 + mm
+    else:
+        eff.eff = eff.objval.copy()
+    if eff.eff.ndim == 2 and eff.eff.shape[1] == 1:
+        eff.eff = eff.eff.flatten()
+
     return eff
 
 
@@ -114,7 +112,6 @@ def dea(
     xref: Optional[Union[ArrayLike, NDArray[float]]] = None,
     yref: Optional[Union[ArrayLike, NDArray[float]]] = None,
     direct: Optional[Union[ArrayLike, NDArray[float]]] = None,
-    slacks: bool = False,
     two_phase: bool = False,
     transpose: bool = False,
 ) -> Efficiency:
@@ -152,7 +149,7 @@ def dea(
     if k != yref.shape[0]:
         raise ValueError("Number of units must be the same in 'x' and 'yref'")
 
-    if direct:
+    if direct is not None:
         direct = np.asarray(direct)
         if orientation == Orientation.input and m != direct.shape[0]:
             raise ValueError(
@@ -178,7 +175,7 @@ def dea(
         y = np.divide(y, yref_s)
         xref = np.divide(xref, xref_s)
         yref = np.divide(yref, yref_s)
-        if direct:
+        if direct is not None:
             if orientation == Orientation.input:
                 direct = np.divide(direct, xref_s)
             else:
@@ -192,13 +189,23 @@ def dea(
     xref = xref.transpose()
     yref = yref.transpose()
 
-    eff = solve_dea(x, y, rts, orientation, xref, yref, two_phase)
+    eff = solve_dea(
+        x=x,
+        y=y,
+        rts=rts,
+        orientation=orientation,
+        xref=xref,
+        yref=yref,
+        direct=direct,
+        two_phase=two_phase,
+    )
+
+    if two_phase:
+        eff = slack(x, y, eff, transpose=True)
 
     if scaling:
         ss = np.hstack((xref_s, yref_s))
         eff.slack = np.multiply(eff.slack, ss)
-        if direct:
-            direct = np.multiply(direct, ss)
 
     eps = 1e-6
     eff.lambdas[np.abs(eff.lambdas) < eps] = 0
@@ -206,7 +213,6 @@ def dea(
 
     eff.slack[np.abs(eff.slack) < eps] = 0
 
-    eff.eff = eff.objval.copy()
     eff.eff[np.abs(eff.eff) < eps] = 0
     eff.eff[np.abs(eff.eff - 1) < eps] = 1
 
