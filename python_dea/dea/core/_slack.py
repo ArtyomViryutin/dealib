@@ -1,6 +1,6 @@
 __all__ = ["slack"]
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -51,13 +51,13 @@ def _solve_slack(
 
 
 def slack(
-    x: Union[ArrayLike, NDArray[float]],
-    y: Union[ArrayLike, NDArray[float]],
+    x: Union[List[List[float]], ArrayLike, NDArray[float]],
+    y: Union[List[List[float]], ArrayLike, NDArray[float]],
     eff: Efficiency,
     *,
     rts: Optional[RTS] = RTS.vrs,
-    xref: Optional[NDArray[float]] = None,
-    yref: Optional[NDArray[float]] = None,
+    xref: Optional[Union[List[List[float]], ArrayLike, NDArray[float]]] = None,
+    yref: Optional[Union[List[List[float]], ArrayLike, NDArray[float]]] = None,
     transpose: Optional[bool] = False,
 ):
     x = np.asarray(x, dtype=float)
@@ -65,8 +65,13 @@ def slack(
 
     if xref is None:
         xref = x.copy()
+    else:
+        xref = np.asarray(xref, dtype=float)
+
     if yref is None:
         yref = y.copy()
+    else:
+        yref = np.asarray(yref, dtype=float)
 
     if transpose:
         x = x.transpose()

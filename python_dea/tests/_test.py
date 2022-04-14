@@ -11,6 +11,7 @@ from python_dea.dea import (
     add,
     dea,
     direct,
+    malmq,
     slack,
 )
 
@@ -52,14 +53,20 @@ if __name__ == "__main__":
     #     [1, 4]
     # ])
     # y = np.asarray([[1], [1], [1], [1], [1], [1]])
+    x0, y0 = get_data("banks1")
+    x1, y1 = get_data("banks2")
+    # x0 = [[10], [28], [30], [60]]
+    # y0 = [[5], [7], [10], [15]]
+    # x1 = [[12], [26], [16], [60]]
+    # y1 = [[6], [8], [9], [15]]
+    res = malmq(x0, y0, x1, y1)
+    print(f"m: {res.m}")
+    print(f"tc: {res.tc}")
+    print(f"ec: {res.ec}")
+    print(f"mq: {res.mq}")
+    print(f"e00: {res.e00}")
+    print(f"e10: {res.e10}")
+    print(f"e11: {res.e11}")
+    print(f"e01: {res.e01}")
 
-    x = [[1, 5], [2, 2], [4, 1], [6, 1], [4, 4]]
-    y = [[2], [2], [2], [2], [2]]
-    x, y = get_data("banks1")
-    print(x.mean())
-    print(y.mean())
-    d = np.asarray([100000, 100000, 100000])
-    eff = direct(
-        np.nan_to_num(x), y, d, orientation=Orientation.input, rts=RTS.vrs
-    )
-    print(eff.objval)
+    dea(x0, y0)

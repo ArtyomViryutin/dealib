@@ -45,9 +45,14 @@ def construct_lpp(
 
 
 def process_result_efficiency(eff: Efficiency, eps: float = 1e-5) -> None:
+    eff.lambdas[eff.lambdas < 0] = np.nan
     eff.lambdas[np.abs(eff.lambdas) < eps] = 0
     eff.lambdas[np.abs(eff.lambdas - 1) < eps] = 1
+
+    eff.slack[eff.slack < 0] = np.nan
     eff.slack[np.abs(eff.slack) < eps] = 0
+
+    eff.eff[eff.eff < 0] = np.nan
     eff.eff[np.abs(eff.eff) < eps] = 0
     eff.eff[np.abs(eff.eff - 1) < eps] = 1
 

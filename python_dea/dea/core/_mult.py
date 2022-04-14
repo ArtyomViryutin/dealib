@@ -1,6 +1,6 @@
 __all__ = ["mult"]
 
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -98,13 +98,13 @@ def _solve_mult(
 
 
 def mult(
-    x: Union[ArrayLike, NDArray[float]],
-    y: Union[ArrayLike, NDArray[float]],
+    x: Union[List[List[float]], ArrayLike, NDArray[float]],
+    y: Union[List[List[float]], ArrayLike, NDArray[float]],
     *,
     rts: RTS = RTS.vrs,
     orientation: Orientation = Orientation.input,
-    xref: Optional[NDArray[float]] = None,
-    yref: Optional[NDArray[float]] = None,
+    xref: Optional[Union[List[List[float]], ArrayLike, NDArray[float]]] = None,
+    yref: Optional[Union[List[List[float]], ArrayLike, NDArray[float]]] = None,
     transpose: bool = False,
 ) -> Efficiency:
     rts = RTS.get(rts)
@@ -115,8 +115,13 @@ def mult(
 
     if xref is None:
         xref = x.copy()
+    else:
+        xref = np.asarray(xref, dtype=float)
+
     if yref is None:
         yref = y.copy()
+    else:
+        yref = np.asarray(yref, dtype=float)
 
     if transpose:
         x = x.transpose()

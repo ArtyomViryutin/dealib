@@ -1,4 +1,6 @@
-__all__ = ["Efficiency"]
+__all__ = ["Efficiency", "Malmquist"]
+
+from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
@@ -20,6 +22,10 @@ class Efficiency:
         self.orientation: Orientation = orientation
         self.eff: NDArray[float] = np.zeros(k)
         self.objval: NDArray[float] = np.zeros(k)
+        self.k: int = k
+        self.m: int = m
+        self.n: int = n
+        self.dual: bool = dual
         if not dual:
             self.lambdas: NDArray[float] = np.zeros((k, k))
             self.slack: NDArray[float] = np.zeros((k, m + n))
@@ -38,3 +44,15 @@ class Efficiency:
         if self.dual:
             return None
         return self.slack[self.m : self.m + self.n]
+
+
+@dataclass
+class Malmquist:
+    m: NDArray[float]
+    tc: NDArray[float]
+    ec: NDArray[float]
+    mq: NDArray[float]
+    e00: NDArray[float]
+    e10: NDArray[float]
+    e11: NDArray[float]
+    e01: NDArray[float]

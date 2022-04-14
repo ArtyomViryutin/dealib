@@ -17,13 +17,7 @@ from .utils import get_data, get_reference, parametrize_options
         ["banks2", 1],
         ["banks3", 1],
     ],
-    ids=[
-        "simple-max-0-mismatches",
-        "charnes-max-1-mismatches",
-        "banks1-max-0-mismatches",
-        "banks2-max-0-mismatches",
-        "banks3-max-1-mismatches",
-    ],
+    ids=["simple", "charnes", "banks1", "banks2", "banks3"],
 )
 @pytest.mark.parametrize(
     "two_phase", [False, True], ids=["one_phase", "two_phase"]
@@ -36,6 +30,8 @@ def test_dea(orientation, rts, folder_name, mismatches, two_phase):
         y,
         orientation=orientation,
         rts=rts,
+        xref=x.copy(),
+        yref=y.copy(),
         two_phase=two_phase,
     )
     ref = reference[orientation.name][rts.name]

@@ -25,7 +25,7 @@ def test_slack(orientation, rts, folder_name):
     n = y.shape[1]
     eff = Efficiency(rts, orientation, k, m, n)
     eff.eff = ref_eff
-    eff = slack(x, y, eff, rts=rts)
+    eff = slack(x, y, eff, rts=rts, xref=x.copy(), yref=y.copy())
 
     threshold = np.mean(ref_slack) * 1e-4
     assert np.count_nonzero(np.abs(ref_slack - eff.slack) > threshold) == 0

@@ -1,3 +1,5 @@
+import tarfile
+
 import numpy as np
 import pytest
 
@@ -17,19 +19,21 @@ from .utils import get_data, get_reference, parametrize_options
         ["banks2", 0],
         ["banks3", 0],
     ],
-    ids=[
-        "simple-max-0-mismatches",
-        "charnes-max-3-mismatches",
-        "banks1-max-0-mismatches",
-        "banks2-max-0-mismatches",
-        "banks3-max-0-mismatches",
-    ],
+    ids=["simple", "charnes", "banks1", "banks2", "banks3"],
 )
 def test_direct(orientation, rts, folder_name, mismatches):
     x, y = get_data(folder_name)
     reference = get_reference("direct", f"{folder_name}.json")
     vector = reference[orientation.name]["vector"]
-    eff = direct(x, y, vector, orientation=orientation, rts=rts)
+    eff = direct(
+        x,
+        y,
+        vector,
+        orientation=orientation,
+        rts=rts,
+        xref=x.copy(),
+        yref=y.copy(),
+    )
 
     ref_objval = np.asarray(reference[orientation.name][rts.name]["objval"])
     ref_eff = np.asarray(reference[orientation.name][rts.name]["eff"])
