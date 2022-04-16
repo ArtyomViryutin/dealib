@@ -35,8 +35,8 @@ def test_dea(orientation, rts, folder_name, mismatches, two_phase):
         two_phase=two_phase,
     )
     ref = reference[orientation.name][rts.name]
-    ref_eff = np.asarray(ref["eff"])
-    ref_slack = np.asarray(ref["slack"])
+    ref_eff = np.asarray(ref["eff"], dtype=float)
+    ref_slack = np.asarray(ref["slack"], dtype=float)
 
     assert np.count_nonzero(np.abs(ref_eff - eff.eff) > 1e-4) <= mismatches
 

@@ -30,7 +30,7 @@ def test_mult(rts, orientation, folder_name, mismatches):
         xref=x.copy(),
         yref=y.copy(),
     )
-    ref_eff = np.asarray(reference[orientation.name][rts.name]["eff"])
-    print(ref_eff[np.abs(ref_eff - eff.eff) > 1e-2])
-    print(eff.eff[np.abs(ref_eff - eff.eff) > 1e-2])
+    ref_eff = np.asarray(
+        reference[orientation.name][rts.name]["eff"], dtype=float
+    )
     assert np.count_nonzero(np.abs(ref_eff - eff.eff) > 1e-2) <= mismatches

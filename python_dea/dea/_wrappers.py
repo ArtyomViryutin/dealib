@@ -20,18 +20,18 @@ class Efficiency:
     ):
         self.rts: RTS = rts
         self.orientation: Orientation = orientation
-        self.eff: NDArray[float] = np.zeros(k)
-        self.objval: NDArray[float] = np.zeros(k)
+        self.eff: NDArray[float] = np.zeros(k, dtype=float)
+        self.objval: NDArray[float] = np.zeros(k, dtype=float)
         self.k: int = k
         self.m: int = m
         self.n: int = n
         self.dual: bool = dual
         if not dual:
-            self.lambdas: NDArray[float] = np.zeros((k, k))
-            self.slack: NDArray[float] = np.zeros((k, m + n))
+            self.lambdas: NDArray[float] = np.zeros((k, k), dtype=float)
+            self.slack: NDArray[float] = np.zeros((k, m + n), dtype=float)
         else:
-            self.lambdas: NDArray[float] = np.zeros((k, m + n))
-            self.slack: NDArray[float] = np.zeros((k, k))
+            self.lambdas: NDArray[float] = np.zeros((k, m + n), dtype=float)
+            self.slack: NDArray[float] = np.zeros((k, k), dtype=float)
 
     @property
     def sx(self):

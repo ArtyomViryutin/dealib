@@ -3,7 +3,12 @@ import pytest
 
 from python_dea.dea import RTS, Orientation, malmq
 
-from .utils import get_data, get_reference, parametrize_options
+from .utils import (
+    compare_valid_values,
+    get_data,
+    get_reference,
+    parametrize_options,
+)
 
 
 @parametrize_options(RTS, "rts")
@@ -25,15 +30,6 @@ def test_malmq(rts, orientation, data0, data1, mismatches):
     ]
     eff = malmq(x0, y0, x1, y1, rts=rts, orientation=orientation)
     for index in ("m", "tc", "ec", "mq", "e00", "e10", "e11", "e01"):
-        ref_index = np.asarray(ref[index])
-        valid_values = np.logical_and(
-            ref_index != np.nan, np.abs(ref_index) != np.inf
-        )
         eff_index = getattr(eff, index)
-        assert (
-            np.count_nonzero(
-                np.abs(ref_index[valid_values] - eff_index[valid_values])
-                > 1e-6
-            )
-            <= mismatches
-        )
+        ref_index = np.asarray(ref[index], dtype=float)
+        compare_valid_values(eff_index, ref_index, mismatches)

@@ -5,7 +5,12 @@ import pytest
 
 from python_dea.dea import RTS, Orientation, direct
 
-from .utils import get_data, get_reference, parametrize_options
+from .utils import (
+    compare_valid_values,
+    get_data,
+    get_reference,
+    parametrize_options,
+)
 
 
 @parametrize_options(RTS, "rts")
@@ -35,15 +40,13 @@ def test_direct(orientation, rts, folder_name, mismatches):
         yref=y.copy(),
     )
 
-    ref_objval = np.asarray(reference[orientation.name][rts.name]["objval"])
-    ref_eff = np.asarray(reference[orientation.name][rts.name]["eff"])
-    ref_eff[ref_eff == np.nan] = 0
-    ref_eff[ref_eff == np.inf] = 0
-    eff.eff[eff.eff == np.nan] = 0
-    eff.eff[eff.eff == np.inf] = 0
+    ref_objval = np.asarray(
+        reference[orientation.name][rts.name]["objval"], dtype=float
+    )
+    ref_eff = np.asarray(
+        reference[orientation.name][rts.name]["eff"], dtype=float
+    )
     assert (
         np.count_nonzero(np.abs(ref_objval - eff.objval) > 1e-6) <= mismatches
     )
-    assert np.count_nonzero(
-        np.abs(ref_eff - eff.eff) > 1e-6
-    ) <= mismatches * len(vector)
+    compare_valid_values(eff.eff, ref_eff, mismatches * len(vector))

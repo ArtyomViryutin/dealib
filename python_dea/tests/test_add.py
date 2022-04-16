@@ -19,7 +19,7 @@ def test_add(rts, folder_name, mismatches):
     x, y = get_data(folder_name)
     reference = get_reference("add", f"{folder_name}.json")
     eff = add(x, y, rts=rts, xref=x.copy(), yref=y.copy())
-    ref_objval = np.asarray(reference[rts.name])
+    ref_objval = np.asarray(reference[rts.name], dtype=float)
     assert (
         np.count_nonzero(np.abs(ref_objval - eff.objval) > ref_objval * 0.05)
         <= mismatches

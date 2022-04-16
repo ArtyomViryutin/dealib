@@ -51,13 +51,14 @@ def _solve_dea(
 ) -> Efficiency:
     m = x.shape[0]
     k = x.shape[1]
+    kr = xref.shape[1]
     n = y.shape[0]
 
     lpp = _construct_dea_lpp(
         xref=xref, yref=yref, rts=rts, orientation=orientation, direct=direct
     )
 
-    eff = Efficiency(rts, orientation, k, m, n)
+    eff = Efficiency(rts, orientation, kr, m, n)
 
     for i in range(k):
         if direct is not None:
@@ -136,7 +137,10 @@ def dea(
     else:
         yref = np.asarray(yref, dtype=float)
 
-    if transpose:
+    if direct is not None:
+        direct = np.asarray(direct, dtype=float)
+
+    if transpose is True:
         x = x.transpose()
         y = y.transpose()
         xref = xref.transpose()

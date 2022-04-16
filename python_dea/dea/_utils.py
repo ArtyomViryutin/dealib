@@ -65,6 +65,15 @@ def validate_data(
     orientation: Optional[Orientation] = None,
     direct: Optional[NDArray[float]] = None,
 ) -> None:
+    if x.ndim != 2:
+        raise ValueError("'x' must be two-dimensional array")
+    if y.ndim != 2:
+        raise ValueError("'y' must be two-dimensional array")
+    if xref.ndim != 2:
+        raise ValueError("'xref' must be two-dimensional array")
+    if yref.ndim != 2:
+        raise ValueError("'yref' must be two-dimensional array")
+
     m = x.shape[1]
     n = y.shape[1]
     k = x.shape[0]
@@ -83,7 +92,6 @@ def validate_data(
         )
 
     if direct is not None:
-        direct = np.asarray(direct)
         if orientation == Orientation.input and m != direct.shape[0]:
             raise ValueError(
                 "Length of 'direct'' must be the number of inputs"

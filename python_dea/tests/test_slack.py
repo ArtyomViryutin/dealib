@@ -17,8 +17,8 @@ def test_slack(orientation, rts, folder_name):
 
     reference = get_reference("dea", f"{folder_name}.json")
     ref = reference[orientation.name][rts.name]
-    ref_slack = np.asarray(ref["slack"])
-    ref_eff = np.asarray(ref["eff"])
+    ref_slack = np.asarray(ref["slack"], dtype=float)
+    ref_eff = np.asarray(ref["eff"], dtype=float)
 
     k = x.shape[0]
     m = x.shape[1]
