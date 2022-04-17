@@ -23,7 +23,7 @@ def test_slack(orientation, rts, folder_name):
     k = x.shape[0]
     m = x.shape[1]
     n = y.shape[1]
-    eff = Efficiency(rts, orientation, k, m, n)
+    eff = Efficiency(rts, orientation, k, k, m, n)
     eff.eff = ref_eff
     eff = slack(x, y, eff, rts=rts, xref=x.copy(), yref=y.copy())
 

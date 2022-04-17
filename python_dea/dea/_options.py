@@ -6,7 +6,7 @@ import enum
 class BaseEnum(enum.Enum):
     @classmethod
     def get(cls, val):
-        if not isinstance(val, cls):
+        if isinstance(val, str):
             enums = {item.name: item.value for item in cls}
             if val not in enums:
                 raise ValueError(

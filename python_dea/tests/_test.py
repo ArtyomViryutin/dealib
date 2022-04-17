@@ -25,17 +25,24 @@ def benchmark(inputs: NDArray[float], outputs: NDArray[float], n: int) -> None:
 
 
 def get_data(name: str):
-    inputs = pd.read_csv(
-        f"/home/artyomviryutin/PycharmProjects/DEA/python_dea/tests/data/{name}/inputs.csv"
+    inputs = np.asarray(
+        pd.read_csv(
+            f"/home/artyomviryutin/PycharmProjects/DEA/python_dea/tests/data/{name}/inputs.csv"
+        )
     )
-    outputs = pd.read_csv(
-        f"/home/artyomviryutin/PycharmProjects/DEA/python_dea/tests/data/{name}/outputs.csv"
+    outputs = np.asarray(
+        pd.read_csv(
+            f"/home/artyomviryutin/PycharmProjects/DEA/python_dea/tests/data/{name}/outputs.csv"
+        )
     )
     return inputs, outputs
 
 
 if __name__ == "__main__":
     x, y = get_data("banks1")
-    eff = sdea(x, y)
-    print(eff.eff[:10])
-    print(eff.lambdas[0, :])
+    # eff = mea(x, y)
+    print(
+        type(Orientation.get(0)),
+        Orientation.get(Orientation.input),
+        Orientation.get("input"),
+    )

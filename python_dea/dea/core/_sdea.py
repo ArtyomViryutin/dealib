@@ -1,11 +1,12 @@
 __all__ = ["sdea"]
 
-from typing import List, Optional, Union
+from typing import Optional
 
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 
 from .._options import RTS, Orientation
+from .._types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
 from .._utils import validate_data
 from .._wrappers import Efficiency
 from ._dea import dea
@@ -13,20 +14,18 @@ from ._dea import dea
 
 def _solve_sdea(
     *,
-    x: Union[List[List[float]], ArrayLike, NDArray[float]],
-    y: Union[List[List[float]], ArrayLike, NDArray[float]],
-    rts: Union[str, RTS] = RTS.vrs,
-    orientation: Union[str, Orientation] = Orientation.input,
-    direct: Optional[
-        Union[List[List[float]], ArrayLike, NDArray[float]]
-    ] = None,
+    x: NDArray[float],
+    y: NDArray[float],
+    rts: RTS,
+    orientation: Orientation,
+    direct: Optional[DIRECTION] = None,
     transpose: bool = False,
 ) -> Efficiency:
     k = x.shape[0]
     m = x.shape[1]
     n = y.shape[1]
 
-    eff = Efficiency(rts, orientation, k, m, n)
+    eff = Efficiency(rts, orientation, k, k, m, n)
     mask = np.ones(k, dtype=bool)
 
     for i in range(k):
@@ -49,13 +48,11 @@ def _solve_sdea(
 
 
 def sdea(
-    x: Union[List[List[float]], ArrayLike, NDArray[float]],
-    y: Union[List[List[float]], ArrayLike, NDArray[float]],
-    rts: Union[str, RTS] = RTS.vrs,
-    orientation: Union[str, Orientation] = Orientation.input,
-    direct: Optional[
-        Union[List[List[float]], ArrayLike, NDArray[float]]
-    ] = None,
+    x: MATRIX,
+    y: MATRIX,
+    rts: RTS_T = RTS.vrs,
+    orientation: ORIENTATION_T = Orientation.input,
+    direct: Optional[DIRECTION] = None,
     transpose: bool = False,
 ) -> Efficiency:
     rts = RTS.get(rts)
@@ -71,6 +68,7 @@ def sdea(
         x = x.transpose()
         y = y.transpose()
 
+    # TODO как direct работает*??
     validate_data(
         x=x, y=y, xref=x, yref=y, orientation=orientation, direct=direct
     )

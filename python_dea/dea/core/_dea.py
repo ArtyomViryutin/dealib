@@ -1,11 +1,12 @@
 __all__ = ["dea"]
 
-from typing import List, Optional, Union
+from typing import Optional
 
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 
 from python_dea.dea._options import RTS, Orientation
+from python_dea.dea._types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
 from python_dea.dea._wrappers import Efficiency
 from python_dea.linprog import LPP, simplex
 
@@ -38,6 +39,24 @@ def _construct_dea_lpp(
     return lpp
 
 
+def _min_direction(lpp: LPP, m: int, n: int, orientation: Orientation):
+    if orientation == Orientation.input:
+        md = m
+        mn0 = 0
+    else:
+        md = n
+        mn0 = m
+
+    direct = np.zeros(md, dtype=float)
+    lpp.A_ub[:, -1] = np.zeros(lpp.A_ub.shape[0], dtype=float)
+    for h in range(md):
+        lpp.A_ub[mn0 + h, -1] = 1
+        lpp_result = simplex(lpp, opt_f=True, opt_slacks=False)
+        lpp.A_ub[mn0 + h, -1] = 0
+        direct[h] = lpp_result.f
+    return direct
+
+
 def _solve_dea(
     *,
     x: NDArray[float],
@@ -50,74 +69,92 @@ def _solve_dea(
     two_phase: bool,
 ) -> Efficiency:
     m = x.shape[0]
+    n = y.shape[0]
     k = x.shape[1]
     kr = xref.shape[1]
-    n = y.shape[0]
+
+    if direct is not None and isinstance(direct, np.ndarray):
+        if direct.ndim > 1:
+            kd = direct.shape[0]
+        else:
+            kd = 0
+    else:
+        kd = 0
 
     lpp = _construct_dea_lpp(
         xref=xref, yref=yref, rts=rts, orientation=orientation, direct=direct
     )
 
-    eff = Efficiency(rts, orientation, kr, m, n)
+    eff = Efficiency(rts, orientation, k, kr, m, n)
+
+    if direct is not None and kd <= 1 and not isinstance(direct, str):
+        if orientation == Orientation.input:
+            lpp.A_ub[:m, -1] = direct
+        else:
+            lpp.A_ub[m : m + n, -1] = direct
+
+    if direct is not None and isinstance(direct, str) and direct == "min":
+        direct_min = True
+        if orientation == Orientation.input:
+            direct_matrix = np.zeros((k, m))
+        else:
+            direct_matrix = np.zeros((k, n))
+    else:
+        direct_min = False
+        direct_matrix = None
 
     for i in range(k):
-        if direct is not None:
+        if direct_min is True:
             lpp.b_ub[:m] = x[:, i]
             lpp.b_ub[m : m + n] = -y[:, i]
+            direct = _min_direction(lpp, m, n, orientation)
             if orientation == Orientation.input:
                 lpp.A_ub[:m, -1] = direct
-                lpp.A_ub[m : m + n, -1] = 0
             else:
-                lpp.A_ub[:m, -1] = 0
                 lpp.A_ub[m : m + n, -1] = direct
-        else:
+            direct_matrix[i, :] = direct
+
+        if direct is None:
             if orientation == Orientation.input:
                 lpp.A_ub[:m, -1] = -x[:, i]
                 lpp.b_ub[m : m + n] = -y[:, i]
             else:
                 lpp.A_ub[m : m + n, -1] = y[:, i]
                 lpp.b_ub[:m] = x[:, i]
+        else:
+            lpp.b_ub[:m] = x[:, i]
+            lpp.b_ub[m : m + n] = -y[:, i]
+            if kd > 1:
+                if orientation == Orientation.input:
+                    lpp.A_ub[:m, -1] = direct[i, :]
+                    lpp.A_ub[m : m + n, -1] = 0
+                else:
+                    lpp.A_ub[:m, -1] = 0
+                    lpp.A_ub[m : m + n, -1] = direct[i, :]
+
         if two_phase:
             lpp_result = simplex(lpp, opt_f=True, opt_slacks=False)
         else:
             lpp_result = simplex(lpp, opt_f=True, opt_slacks=True)
+
         eff.objval[i] = lpp_result.x[-1]
         eff.lambdas[i] = lpp_result.x[:-1]
         eff.slack[i] = lpp_result.slack[: m + n]
 
-    if direct is not None:
-        mm = np.outer(eff.objval, direct)
-        if orientation == Orientation.input:
-            x_t = xref.transpose()
-            not_nulls = x_t != 0
-            mm[not_nulls] /= x_t[not_nulls]
-            mm[np.logical_not(not_nulls)] = np.inf
-            eff.eff = 1 - mm
-        else:
-            y_t = yref.transpose()
-            not_nulls = y_t != 0
-            mm[not_nulls] /= y_t[not_nulls]
-            mm[np.logical_not(not_nulls)] = np.inf
-            eff.eff = 1 + mm
-    else:
-        eff.eff = eff.objval.copy()
-    if eff.eff.ndim == 2 and eff.eff.shape[1] == 1:
-        eff.eff = eff.eff.flatten()
+    eff.eff = eff.objval.copy()
 
     return eff
 
 
 def dea(
-    x: Union[List[List[float]], ArrayLike, NDArray[float]],
-    y: Union[List[List[float]], ArrayLike, NDArray[float]],
+    x: MATRIX,
+    y: MATRIX,
     *,
-    rts: Union[str, RTS] = RTS.vrs,
-    orientation: Union[str, Orientation] = Orientation.input,
-    xref: Optional[Union[List[List[float]], ArrayLike, NDArray[float]]] = None,
-    yref: Optional[Union[List[List[float]], ArrayLike, NDArray[float]]] = None,
-    direct: Optional[
-        Union[List[List[float]], ArrayLike, NDArray[float]]
-    ] = None,
+    rts: RTS_T = RTS.vrs,
+    orientation: ORIENTATION_T = Orientation.input,
+    xref: Optional[MATRIX] = None,
+    yref: Optional[MATRIX] = None,
+    direct: Optional[DIRECTION] = None,
     two_phase: bool = False,
     transpose: bool = False,
 ) -> Efficiency:
@@ -128,23 +165,32 @@ def dea(
     y = np.asarray(y, dtype=float)
 
     if xref is None:
-        xref = x.copy()
+        xref = x
     else:
         xref = np.asarray(xref, dtype=float)
 
     if yref is None:
-        yref = y.copy()
+        yref = y
     else:
         yref = np.asarray(yref, dtype=float)
 
-    if direct is not None:
-        direct = np.asarray(direct, dtype=float)
+    if direct is not None and not isinstance(direct, str):
+        if isinstance(direct, list) or isinstance(direct, np.ndarray):
+            direct = np.asarray(direct, dtype=float)
+        else:
+            if orientation == Orientation.input:
+                direct = np.full(x.shape[1], direct)
+            else:
+                direct = np.full(y.shape[1], direct)
 
     if transpose is True:
         x = x.transpose()
         y = y.transpose()
         xref = xref.transpose()
         yref = yref.transpose()
+
+        if direct is not None and direct.ndim > 1:
+            direct = direct.transpose()
 
     validate_data(
         x=x, y=y, xref=xref, yref=yref, orientation=orientation, direct=direct
@@ -165,7 +211,7 @@ def dea(
         y = np.divide(y, yref_s)
         xref = np.divide(xref, xref_s)
         yref = np.divide(yref, yref_s)
-        if direct is not None:
+        if direct is not None and isinstance(direct, np.ndarray):
             if orientation == Orientation.input:
                 direct = np.divide(direct, xref_s)
             else:
@@ -178,6 +224,13 @@ def dea(
     y = y.transpose()
     xref = xref.transpose()
     yref = yref.transpose()
+
+    if (
+        direct is not None
+        and isinstance(direct, np.ndarray)
+        and direct.ndim > 1
+    ):
+        direct = direct.transpose()
 
     eff = _solve_dea(
         x=x,

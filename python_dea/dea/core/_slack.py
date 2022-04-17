@@ -1,14 +1,15 @@
 __all__ = ["slack"]
 
-from typing import List, Optional, Union
+from typing import Optional
 
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 
 from python_dea.dea._options import RTS, Orientation
 from python_dea.dea._wrappers import Efficiency
 from python_dea.linprog import LPP, simplex
 
+from .._types import MATRIX, RTS_T
 from .._utils import construct_lpp, process_result_efficiency, validate_data
 
 
@@ -51,15 +52,15 @@ def _solve_slack(
 
 
 def slack(
-    x: Union[List[List[float]], ArrayLike, NDArray[float]],
-    y: Union[List[List[float]], ArrayLike, NDArray[float]],
+    x: MATRIX,
+    y: MATRIX,
     eff: Efficiency,
     *,
-    rts: Optional[RTS] = RTS.vrs,
-    xref: Optional[Union[List[List[float]], ArrayLike, NDArray[float]]] = None,
-    yref: Optional[Union[List[List[float]], ArrayLike, NDArray[float]]] = None,
+    rts: RTS_T = RTS.vrs,
+    xref: Optional[MATRIX] = None,
+    yref: Optional[MATRIX] = None,
     transpose: Optional[bool] = False,
-):
+) -> Efficiency:
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
 

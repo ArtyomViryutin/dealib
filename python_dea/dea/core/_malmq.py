@@ -1,9 +1,8 @@
 __all__ = ["malmq"]
 
-from typing import List, Union
-
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+
+from python_dea.dea._types import MATRIX, ORIENTATION_T, RTS_T
 
 from .._options import RTS, Orientation
 from .._wrappers import Malmquist
@@ -11,13 +10,13 @@ from ._dea import dea
 
 
 def malmq(
-    x0: Union[List[List[float]], ArrayLike, NDArray[float]],
-    y0: Union[List[List[float]], ArrayLike, NDArray[float]],
-    x1: Union[List[List[float]], ArrayLike, NDArray[float]],
-    y1: Union[List[List[float]], ArrayLike, NDArray[float]],
+    x0: MATRIX,
+    y0: MATRIX,
+    x1: MATRIX,
+    y1: MATRIX,
     *,
-    orientation: Orientation = Orientation.input,
-    rts: RTS = RTS.vrs,
+    orientation: ORIENTATION_T = Orientation.input,
+    rts: RTS_T = RTS.vrs,
     transpose: bool = False,
 ) -> Malmquist:
     e00 = dea(

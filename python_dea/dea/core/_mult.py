@@ -10,6 +10,7 @@ from python_dea.dea._wrappers import Efficiency
 from python_dea.linprog import simplex
 from python_dea.linprog.wrappers import LPP
 
+from .._types import MATRIX, ORIENTATION_T, RTS_T
 from .._utils import process_result_efficiency, validate_data
 
 
@@ -75,7 +76,7 @@ def _solve_mult(
 
     lpp = _construct_lpp(xref, yref, rts)
 
-    eff = Efficiency(rts, orientation, k, m, n, dual=True)
+    eff = Efficiency(rts, orientation, k, k, m, n, dual=True)
 
     for i in range(k):
         if orientation == Orientation.input:
@@ -98,13 +99,13 @@ def _solve_mult(
 
 
 def mult(
-    x: Union[List[List[float]], ArrayLike, NDArray[float]],
-    y: Union[List[List[float]], ArrayLike, NDArray[float]],
+    x: Union[MATRIX],
+    y: Union[MATRIX],
     *,
-    rts: RTS = RTS.vrs,
-    orientation: Orientation = Orientation.input,
-    xref: Optional[Union[List[List[float]], ArrayLike, NDArray[float]]] = None,
-    yref: Optional[Union[List[List[float]], ArrayLike, NDArray[float]]] = None,
+    rts: RTS_T = RTS.vrs,
+    orientation: ORIENTATION_T = Orientation.input,
+    xref: Optional[MATRIX] = None,
+    yref: Optional[MATRIX] = None,
     transpose: bool = False,
 ) -> Efficiency:
     rts = RTS.get(rts)

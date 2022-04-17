@@ -1,6 +1,5 @@
 __all__ = [
     "construct_lpp",
-    "scale_data",
     "process_result_efficiency",
     "validate_data",
 ]
@@ -91,16 +90,20 @@ def validate_data(
             "Number of units must be the same in 'xref' and 'yref'"
         )
 
-    if direct is not None:
-        if orientation == Orientation.input and m != direct.shape[0]:
-            raise ValueError(
-                "Length of 'direct'' must be the number of inputs"
-            )
-        elif orientation == Orientation.output and n != direct.shape[0]:
+    if direct is not None and not isinstance(direct, str):
+        if direct.ndim > 1:
+            kd, md = direct.shape
+        else:
+            md = direct.shape[0]
+            kd = 0
+
+        if orientation == Orientation.input and m != md:
+            raise ValueError("Length of 'direct' must be the number of inputs")
+        elif orientation == Orientation.output and n != md:
             raise ValueError(
                 "Length of 'direct'' must be the number of outputs"
             )
-
-
-def scale_data(x: NDArray[float], y: NDArray[float]):
-    pass
+        if kd > 0 and kd != k:
+            raise ValueError(
+                "Number of units in 'direct' must equal units in 'x' and y'"
+            )
