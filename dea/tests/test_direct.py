@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from python_dea.dea import RTS, Orientation, direct
+from dea.dea import RTS, Orientation, direct
 
 from .utils import (
     compare_valid_values,
@@ -23,7 +23,7 @@ from .utils import (
         ["banks3", 0],
     ],
 )
-def test_direct_vector(orientation, rts, folder_name, mismatches):
+def test_direct_vector(rts, orientation, folder_name, mismatches):
     x, y = get_data(folder_name)
     reference = get_reference("direct", f"{folder_name}.json")
     vector = reference[orientation.name]["vector"]
@@ -31,10 +31,8 @@ def test_direct_vector(orientation, rts, folder_name, mismatches):
         x,
         y,
         vector,
-        orientation=orientation,
         rts=rts,
-        xref=x.copy(),
-        yref=y.copy(),
+        orientation=orientation,
     )
 
     ref_objval = np.asarray(

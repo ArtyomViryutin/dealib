@@ -36,7 +36,7 @@ def get_reference(folder_name: str, filename: str):
 def compare_valid_values(
     actual: NDArray[float],
     desired: NDArray[float],
-    mismatches: int,
+    mismatches: int = 0,
     tol: float = 1e-6,
 ) -> None:
     valid_values = np.logical_and(desired != np.nan, np.abs(desired) != np.inf)

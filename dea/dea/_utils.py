@@ -9,7 +9,7 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from python_dea.linprog import LPP
+from dea.linprog import LPP
 
 from ._options import RTS, Orientation
 from ._wrappers import Efficiency
@@ -22,12 +22,13 @@ def construct_lpp(
 ) -> LPP:
     lpp = LPP()
 
-    m, k = xref.shape
-    n = yref.shape[0]
+    m = xref.shape[1]
+    n = yref.shape[1]
+    k = xref.shape[0]
 
     lpp.c = np.zeros(k)
     lpp.b_ub = np.zeros(m + n)
-    lpp.A_ub = np.vstack((xref, -yref))
+    lpp.A_ub = np.vstack((xref.transpose(), -yref.transpose()))
 
     if rts != RTS.crs:
         rts_constraint = np.ones(k)
@@ -43,17 +44,18 @@ def construct_lpp(
     return lpp
 
 
-def process_result_efficiency(eff: Efficiency, eps: float = 1e-5) -> None:
-    eff.lambdas[eff.lambdas < 0] = np.nan
-    eff.lambdas[np.abs(eff.lambdas) < eps] = 0
-    eff.lambdas[np.abs(eff.lambdas - 1) < eps] = 1
+def process_result_efficiency(e: Efficiency, eps: float = 1e-5) -> None:
+    if e.lambdas is not None:
+        e.lambdas[e.lambdas < 0] = np.nan
+        e.lambdas[np.abs(e.lambdas) < eps] = 0
+        e.lambdas[np.abs(e.lambdas - 1) < eps] = 1
 
-    eff.slack[eff.slack < 0] = np.nan
-    eff.slack[np.abs(eff.slack) < eps] = 0
+    e.slack[e.slack < 0] = np.nan
+    e.slack[np.abs(e.slack) < eps] = 0
 
-    eff.eff[eff.eff < 0] = np.nan
-    eff.eff[np.abs(eff.eff) < eps] = 0
-    eff.eff[np.abs(eff.eff - 1) < eps] = 1
+    e.eff[e.eff < 0] = np.nan
+    e.eff[np.abs(e.eff) < eps] = 0
+    e.eff[np.abs(e.eff - 1) < eps] = 1
 
 
 def validate_data(

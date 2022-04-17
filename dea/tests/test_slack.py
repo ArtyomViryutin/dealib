@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from python_dea.dea import RTS, Efficiency, Orientation, slack
+from dea.dea import RTS, Efficiency, Orientation, slack
 
 from .utils import get_data, get_reference, parametrize_options
 
@@ -12,7 +12,7 @@ from .utils import get_data, get_reference, parametrize_options
     "folder_name",
     ["simple", "charnes", "banks1", "banks2", "banks3"],
 )
-def test_slack(orientation, rts, folder_name):
+def test_slack(rts, orientation, folder_name):
     x, y = get_data(folder_name)
 
     reference = get_reference("dea", f"{folder_name}.json")
@@ -20,12 +20,19 @@ def test_slack(orientation, rts, folder_name):
     ref_slack = np.asarray(ref["slack"], dtype=float)
     ref_eff = np.asarray(ref["eff"], dtype=float)
 
-    k = x.shape[0]
     m = x.shape[1]
     n = y.shape[1]
-    eff = Efficiency(rts, orientation, k, k, m, n)
-    eff.eff = ref_eff
-    eff = slack(x, y, eff, rts=rts, xref=x.copy(), yref=y.copy())
-
+    k = x.shape[0]
+    e = Efficiency(
+        rts=rts,
+        orientation=orientation,
+        transpose=False,
+        eff=ref_eff,
+        objval=np.zeros(k),
+        lambdas=np.zeros((k, k)),
+        sx=np.zeros((k, m)),
+        sy=np.zeros((k, n)),
+    )
+    sl_eff = slack(x, y, e, rts=rts)
     threshold = np.mean(ref_slack) * 1e-4
-    assert np.count_nonzero(np.abs(ref_slack - eff.slack) > threshold) == 0
+    assert np.count_nonzero(np.abs(ref_slack - sl_eff.slack) > threshold) == 0

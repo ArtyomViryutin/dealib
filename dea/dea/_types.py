@@ -4,7 +4,7 @@ from typing import List, Union
 
 from numpy.typing import ArrayLike, NDArray
 
-from python_dea.dea._options import RTS, Orientation
+from dea.dea._options import RTS, Orientation
 
 RTS_T = Union[int, str, RTS]
 

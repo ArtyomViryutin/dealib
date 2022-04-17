@@ -17,8 +17,8 @@ def mea(
     transpose: bool = False,
 ) -> Efficiency:
     return dea(
-        x,
-        y,
+        x=x,
+        y=y,
         rts=rts,
         orientation=orientation,
         xref=xref,

@@ -4,7 +4,7 @@ from typing import Optional
 
 import numpy as np
 
-from python_dea.dea._types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
+from dea.dea._types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
 
 from .._options import RTS, Orientation
 from ._dea import dea
@@ -22,11 +22,7 @@ def direct(
     two_phase: bool = False,
     transpose: bool = False,
 ):
-    x = np.asarray(x)
-    y = np.asarray(y)
-    direct_ = np.asarray(direct_)
-
-    eff = dea(
+    e = dea(
         x=x,
         y=y,
         rts=rts,
@@ -38,21 +34,21 @@ def direct(
         transpose=transpose,
     )
 
-    mm = np.outer(eff.objval, direct_)
+    mm = np.outer(e.objval, e.direct)
     if orientation == Orientation.input:
-        div = x
+        div = np.asarray(x)
     else:
-        div = y
+        div = np.asarray(y)
 
     not_nulls = div != 0
     mm[not_nulls] /= div[not_nulls]
     mm[np.logical_not(not_nulls)] = np.inf
 
     if orientation == Orientation.input:
-        eff.eff = 1 - mm
+        e.eff = 1 - mm
     else:
-        eff.eff = 1 + mm
+        e.eff = 1 + mm
 
-    if eff.eff.shape[1] == 1:
-        eff.eff = eff.eff.flatten()
-    return eff
+    if e.eff.shape[1] == 1:
+        e.eff = e.eff.flatten()
+    return e

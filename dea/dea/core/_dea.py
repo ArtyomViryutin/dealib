@@ -5,16 +5,16 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from python_dea.dea._options import RTS, Orientation
-from python_dea.dea._types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
-from python_dea.dea._wrappers import Efficiency
-from python_dea.linprog import LPP, simplex
+from dea.dea._options import RTS, Orientation
+from dea.dea._types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
+from dea.dea._wrappers import Efficiency
+from dea.linprog import LPP, simplex
 
 from .._utils import construct_lpp, process_result_efficiency, validate_data
 from ._slack import slack
 
 
-def _construct_dea_lpp(
+def _construct_lpp(
     *,
     xref: NDArray[float],
     yref: NDArray[float],
@@ -34,7 +34,7 @@ def _construct_dea_lpp(
         lpp.c = np.append(lpp.c, 1)
 
     if rts == RTS.vrs:
-        lpp.A_eq = np.append(lpp.A_eq[0], 0)[np.newaxis, :]
+        lpp.A_eq = np.append(lpp.A_eq[0], 0)[np.newaxis]
 
     return lpp
 
@@ -67,11 +67,12 @@ def _solve_dea(
     yref: NDArray[float],
     direct: Optional[NDArray[float]],
     two_phase: bool,
+    transpose: bool,
 ) -> Efficiency:
-    m = x.shape[0]
-    n = y.shape[0]
-    k = x.shape[1]
-    kr = xref.shape[1]
+    m = x.shape[1]
+    n = y.shape[1]
+    k = x.shape[0]
+    kr = xref.shape[0]
 
     if direct is not None and isinstance(direct, np.ndarray):
         if direct.ndim > 1:
@@ -81,11 +82,9 @@ def _solve_dea(
     else:
         kd = 0
 
-    lpp = _construct_dea_lpp(
+    lpp = _construct_lpp(
         xref=xref, yref=yref, rts=rts, orientation=orientation, direct=direct
     )
-
-    eff = Efficiency(rts, orientation, k, kr, m, n)
 
     if direct is not None and kd <= 1 and not isinstance(direct, str):
         if orientation == Orientation.input:
@@ -103,47 +102,68 @@ def _solve_dea(
         direct_min = False
         direct_matrix = None
 
+    e = Efficiency(
+        rts=rts,
+        orientation=orientation,
+        eff=np.zeros(k),
+        objval=np.zeros(k),
+        lambdas=np.zeros((k, kr)),
+        slack=np.zeros((k, m + n)),
+        sx=np.zeros((k, m)),
+        sy=np.zeros((k, n)),
+        transpose=transpose,
+    )
     for i in range(k):
         if direct_min is True:
-            lpp.b_ub[:m] = x[:, i]
-            lpp.b_ub[m : m + n] = -y[:, i]
+            lpp.b_ub[:m] = x[i]
+            lpp.b_ub[m : m + n] = -y[i]
             direct = _min_direction(lpp, m, n, orientation)
             if orientation == Orientation.input:
                 lpp.A_ub[:m, -1] = direct
             else:
                 lpp.A_ub[m : m + n, -1] = direct
-            direct_matrix[i, :] = direct
+            direct_matrix[i] = direct
+            if np.max(direct) < 1e-6:
+                e.objval[i] = 0
+                e.lambdas[i, i] = 1
+                continue
 
         if direct is None:
             if orientation == Orientation.input:
-                lpp.A_ub[:m, -1] = -x[:, i]
-                lpp.b_ub[m : m + n] = -y[:, i]
+                lpp.A_ub[:m, -1] = -x[i]
+                lpp.b_ub[m : m + n] = -y[i]
             else:
-                lpp.A_ub[m : m + n, -1] = y[:, i]
-                lpp.b_ub[:m] = x[:, i]
+                lpp.A_ub[m : m + n, -1] = y[i]
+                lpp.b_ub[:m] = x[i]
         else:
-            lpp.b_ub[:m] = x[:, i]
-            lpp.b_ub[m : m + n] = -y[:, i]
+            lpp.b_ub[:m] = x[i]
+            lpp.b_ub[m : m + n] = -y[i]
             if kd > 1:
                 if orientation == Orientation.input:
-                    lpp.A_ub[:m, -1] = direct[i, :]
+                    lpp.A_ub[:m, -1] = direct[i]
                     lpp.A_ub[m : m + n, -1] = 0
                 else:
                     lpp.A_ub[:m, -1] = 0
-                    lpp.A_ub[m : m + n, -1] = direct[i, :]
+                    lpp.A_ub[m : m + n, -1] = direct[i]
 
         if two_phase:
             lpp_result = simplex(lpp, opt_f=True, opt_slacks=False)
         else:
             lpp_result = simplex(lpp, opt_f=True, opt_slacks=True)
 
-        eff.objval[i] = lpp_result.x[-1]
-        eff.lambdas[i] = lpp_result.x[:-1]
-        eff.slack[i] = lpp_result.slack[: m + n]
+        e.objval[i] = lpp_result.x[-1]
+        e.lambdas[i] = lpp_result.x[:-1]
 
-    eff.eff = eff.objval.copy()
+        e.sx[i] = lpp_result.slack[:m]
+        e.sy[i] = lpp_result.slack[m : m + n]
 
-    return eff
+    if direct_min is True:
+        direct = direct
+
+    e.eff = e.objval.copy()
+    e.direct = direct
+    e.slack = np.hstack((e.sx, e.sy))
+    return e
 
 
 def dea(
@@ -189,7 +209,11 @@ def dea(
         xref = xref.transpose()
         yref = yref.transpose()
 
-        if direct is not None and direct.ndim > 1:
+        if (
+            direct is not None
+            and isinstance(direct, np.ndarray)
+            and direct.ndim > 1
+        ):
             direct = direct.transpose()
 
     validate_data(
@@ -220,19 +244,7 @@ def dea(
         scaling = False
         xref_s = yref_s = None
 
-    x = x.transpose()
-    y = y.transpose()
-    xref = xref.transpose()
-    yref = yref.transpose()
-
-    if (
-        direct is not None
-        and isinstance(direct, np.ndarray)
-        and direct.ndim > 1
-    ):
-        direct = direct.transpose()
-
-    eff = _solve_dea(
+    e = _solve_dea(
         x=x,
         y=y,
         rts=rts,
@@ -241,16 +253,27 @@ def dea(
         yref=yref,
         direct=direct,
         two_phase=two_phase,
+        transpose=transpose,
     )
 
     if two_phase:
-        eff = slack(
-            x=x, y=y, eff=eff, rts=rts, xref=xref, yref=yref, transpose=True
-        )
+        se = slack(x=x, y=y, e=e, rts=rts, xref=xref, yref=yref)
+        e.sx = se.sx
+        e.sy = se.sy
+        e.slack = se.slack
+        e.lambdas = se.lambdas
 
     if scaling is True:
-        eff.slack = np.multiply(eff.slack, np.hstack((xref_s, yref_s)))
+        e.sx = np.multiply(e.sx, xref_s)
+        e.sy = np.multiply(e.sy, yref_s)
+        e.slack = np.multiply(e.slack, np.hstack((xref_s, yref_s)))
 
-    process_result_efficiency(eff)
+        if isinstance(e.direct, np.ndarray):
+            if orientation == Orientation.input:
+                e.direct = np.multiply(e.direct, xref_s)
+            else:
+                e.direct = np.multiply(e.direct, yref_s)
 
-    return eff
+    process_result_efficiency(e)
+
+    return e

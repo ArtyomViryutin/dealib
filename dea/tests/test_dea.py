@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from python_dea.dea import RTS, Orientation, dea
+from dea.dea import RTS, Orientation, dea
 
 from .utils import get_data, get_reference, parametrize_options
 
@@ -22,16 +22,14 @@ from .utils import get_data, get_reference, parametrize_options
 @pytest.mark.parametrize(
     "two_phase", [False, True], ids=["one_phase", "two_phase"]
 )
-def test_dea(orientation, rts, folder_name, mismatches, two_phase):
+def test_dea(rts, orientation, folder_name, mismatches, two_phase):
     x, y = get_data(folder_name)
     reference = get_reference("dea", f"{folder_name}.json")
     eff = dea(
         x,
         y,
-        orientation=orientation,
         rts=rts,
-        xref=x.copy(),
-        yref=y.copy(),
+        orientation=orientation,
         two_phase=two_phase,
     )
     ref = reference[orientation.name][rts.name]
@@ -41,7 +39,8 @@ def test_dea(orientation, rts, folder_name, mismatches, two_phase):
     assert np.count_nonzero(np.abs(ref_eff - eff.eff) > 1e-4) <= mismatches
 
     threshold = np.mean(ref_slack) * 1e-3
-    m, n = x.shape[1], y.shape[1]
+    m = x.shape[1]
+    n = y.shape[1]
     assert np.count_nonzero(
         np.abs(ref_slack - eff.slack) > threshold
     ) <= mismatches * (m + n)

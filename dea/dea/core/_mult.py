@@ -3,12 +3,12 @@ __all__ = ["mult"]
 from typing import List, Optional, Union
 
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 
-from python_dea.dea._options import RTS, Orientation
-from python_dea.dea._wrappers import Efficiency
-from python_dea.linprog import simplex
-from python_dea.linprog.wrappers import LPP
+from dea.dea._options import RTS, Orientation
+from dea.dea._wrappers import Efficiency
+from dea.linprog import simplex
+from dea.linprog.wrappers import LPP
 
 from .._types import MATRIX, ORIENTATION_T, RTS_T
 from .._utils import process_result_efficiency, validate_data
@@ -70,32 +70,42 @@ def _solve_mult(
     xref: NDArray[float],
     yref: NDArray[float],
 ) -> Efficiency:
-    k = xref.shape[0]
-    m = xref.shape[1]
-    n = yref.shape[1]
+    m = x.shape[1]
+    n = y.shape[1]
+    k = x.shape[0]
+    kr = xref.shape[0]
 
     lpp = _construct_lpp(xref, yref, rts)
 
-    eff = Efficiency(rts, orientation, k, k, m, n, dual=True)
+    e = Efficiency(
+        rts=rts,
+        orientation=orientation,
+        eff=np.zeros(k),
+        objval=np.zeros(k),
+        ux=np.zeros((kr, m)),
+        vy=np.zeros((kr, n)),
+        slack=np.zeros((k, kr)),
+    )
 
     for i in range(k):
         if orientation == Orientation.input:
-            lpp.c[m : m + n] = y[i, :]
-            lpp.A_eq[0][:m] = x[i, :]
+            lpp.c[m : m + n] = y[i]
+            lpp.A_eq[0][:m] = x[i]
         else:
-            lpp.c[:m] = -x[i, :]
-            lpp.A_eq[0][m : m + n] = y[i, :]
+            lpp.c[:m] = -x[i]
+            lpp.A_eq[0][m : m + n] = y[i]
         lpp_result = simplex(
             lpp,
             opt_f=True,
             opt_slacks=False,
         )
-        eff.objval[i] = abs(lpp_result.f)
-        eff.lambdas[i] = lpp_result.x[: m + n]
-        eff.slack[i] = lpp_result.slack[:k]
+        e.objval[i] = abs(lpp_result.f)
+        e.ux[i] = lpp_result.x[:m]
+        e.vy[i] = lpp_result.x[m : m + n]
+        e.slack[i] = lpp_result.slack[:k]
 
-    eff.eff = eff.objval.copy()
-    return eff
+    e.eff = e.objval.copy()
+    return e
 
 
 def mult(
@@ -151,12 +161,13 @@ def mult(
         scaling = False
         xref_s = yref_s = None
 
-    eff = _solve_mult(
+    e = _solve_mult(
         x=x, y=y, rts=rts, orientation=orientation, xref=xref, yref=yref
     )
 
     if scaling is True:
-        eff.lambdas = np.divide(eff.lambdas, np.hstack((xref_s, yref_s)))
+        e.ux = np.divide(e.ux, xref_s)
+        e.vy = np.divide(e.vy, yref_s)
 
-    process_result_efficiency(eff)
-    return eff
+    process_result_efficiency(e)
+    return e

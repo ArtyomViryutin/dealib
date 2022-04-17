@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from python_dea.dea import RTS, Orientation, malmq
+from dea.dea import RTS, Orientation, malmq
 
 from .utils import (
     compare_valid_values,
