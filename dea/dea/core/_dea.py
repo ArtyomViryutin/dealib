@@ -10,7 +10,13 @@ from dea.dea._types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
 from dea.dea._wrappers import Efficiency
 from dea.linprog import LPP, simplex
 
-from .._utils import construct_lpp, process_result_efficiency, validate_data
+from .._utils import (
+    apply_scaling,
+    construct_lpp,
+    prepare_data,
+    process_result_efficiency,
+    validate_data,
+)
 from ._slack import slack
 
 
@@ -181,68 +187,23 @@ def dea(
     rts = RTS.get(rts)
     orientation = Orientation.get(orientation)
 
-    x = np.asarray(x, dtype=float)
-    y = np.asarray(y, dtype=float)
-
-    if xref is None:
-        xref = x
-    else:
-        xref = np.asarray(xref, dtype=float)
-
-    if yref is None:
-        yref = y
-    else:
-        yref = np.asarray(yref, dtype=float)
-
-    if direct is not None and not isinstance(direct, str):
-        if isinstance(direct, list) or isinstance(direct, np.ndarray):
-            direct = np.asarray(direct, dtype=float)
-        else:
-            if orientation == Orientation.input:
-                direct = np.full(x.shape[1], direct)
-            else:
-                direct = np.full(y.shape[1], direct)
-
-    if transpose is True:
-        x = x.transpose()
-        y = y.transpose()
-        xref = xref.transpose()
-        yref = yref.transpose()
-
-        if (
-            direct is not None
-            and isinstance(direct, np.ndarray)
-            and direct.ndim > 1
-        ):
-            direct = direct.transpose()
+    x, y, xref, yref, direct = prepare_data(
+        x=x,
+        y=y,
+        xref=xref,
+        yref=yref,
+        transpose=transpose,
+        orientation=orientation,
+        direct=direct,
+    )
 
     validate_data(
         x=x, y=y, xref=xref, yref=yref, orientation=orientation, direct=direct
     )
 
-    xref_m, yref_m = xref.mean(axis=0), yref.mean(axis=0)
-    if (
-        np.min(xref_m) < 1e-4
-        or np.max(xref_m) > 10000
-        or np.min(yref_m) < 1e-4
-        or np.max(yref_m) > 10000
-    ):
-        scaling = True
-        xref_s, yref_s = xref.std(axis=0), yref.std(axis=0)
-        xref_s[xref_s < 1e-9] = 1
-        yref_s[yref_s < 1e-9] = 1
-        x = np.divide(x, xref_s)
-        y = np.divide(y, yref_s)
-        xref = np.divide(xref, xref_s)
-        yref = np.divide(yref, yref_s)
-        if direct is not None and isinstance(direct, np.ndarray):
-            if orientation == Orientation.input:
-                direct = np.divide(direct, xref_s)
-            else:
-                direct = np.divide(direct, yref_s)
-    else:
-        scaling = False
-        xref_s = yref_s = None
+    scaling, xref_s, yref_s = apply_scaling(
+        x=x, y=y, xref=xref, yref=yref, orientation=orientation, direct=direct
+    )
 
     e = _solve_dea(
         x=x,

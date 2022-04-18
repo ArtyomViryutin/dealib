@@ -1,6 +1,6 @@
 __all__ = ["mult"]
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -11,7 +11,12 @@ from dea.linprog import simplex
 from dea.linprog.wrappers import LPP
 
 from .._types import MATRIX, ORIENTATION_T, RTS_T
-from .._utils import process_result_efficiency, validate_data
+from .._utils import (
+    apply_scaling,
+    prepare_data,
+    process_result_efficiency,
+    validate_data,
+)
 
 
 def _construct_lpp(
@@ -121,45 +126,17 @@ def mult(
     rts = RTS.get(rts)
     orientation = Orientation.get(orientation)
 
-    x = np.asarray(x, dtype=float)
-    y = np.asarray(y, dtype=float)
-
-    if xref is None:
-        xref = x.copy()
-    else:
-        xref = np.asarray(xref, dtype=float)
-
-    if yref is None:
-        yref = y.copy()
-    else:
-        yref = np.asarray(yref, dtype=float)
-
-    if transpose:
-        x = x.transpose()
-        y = y.transpose()
-        xref = xref.transpose()
-        yref = yref.transpose()
+    x, y, xref, yref, _ = prepare_data(
+        x=x,
+        y=y,
+        xref=xref,
+        yref=yref,
+        transpose=transpose,
+    )
 
     validate_data(x=x, y=y, xref=xref, yref=yref)
 
-    xref_m, yref_m = x.mean(axis=0), y.mean(axis=0)
-    if (
-        min(xref_m) < 1e-4
-        or max(xref_m) > 10000
-        or min(yref_m) < 1e-4
-        or max(yref_m) > 10000
-    ):
-        scaling = True
-        xref_s, yref_s = xref.std(axis=0), yref.std(axis=0)
-        xref_s[xref_s < 1e-9] = 1
-        yref_s[yref_s < 1e-9] = 1
-        x = np.divide(x, xref_s)
-        y = np.divide(y, yref_s)
-        xref = np.divide(xref, xref_s)
-        yref = np.divide(yref, yref_s)
-    else:
-        scaling = False
-        xref_s = yref_s = None
+    scaling, xref_s, yref_s = apply_scaling(x=x, y=y, xref=xref, yref=yref)
 
     e = _solve_mult(
         x=x, y=y, rts=rts, orientation=orientation, xref=xref, yref=yref

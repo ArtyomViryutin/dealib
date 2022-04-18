@@ -11,7 +11,13 @@ from dea.dea._wrappers import Efficiency
 from dea.linprog import LPP, simplex
 
 from .._types import MATRIX, RTS_T
-from .._utils import construct_lpp, process_result_efficiency, validate_data
+from .._utils import (
+    apply_scaling,
+    construct_lpp,
+    prepare_data,
+    process_result_efficiency,
+    validate_data,
+)
 
 
 def _construct_slack_lpp(
@@ -64,46 +70,13 @@ def slack(
     yref: Optional[MATRIX] = None,
     transpose: Optional[bool] = False,
 ) -> Efficiency:
-    x = np.asarray(x, dtype=float)
-    y = np.asarray(y, dtype=float)
-
-    if xref is None:
-        xref = x.copy()
-    else:
-        xref = np.asarray(xref, dtype=float)
-
-    if yref is None:
-        yref = y.copy()
-    else:
-        yref = np.asarray(yref, dtype=float)
-
-    if transpose:
-        x = x.transpose()
-        y = y.transpose()
-        xref = xref.transpose()
-        yref = yref.transpose()
+    x, y, xref, yref, _ = prepare_data(
+        x=x, y=y, xref=xref, yref=yref, transpose=transpose
+    )
 
     validate_data(x=x, y=y, xref=xref, yref=yref)
 
-    xref_m, yref_m = xref.mean(axis=0), yref.mean(axis=0)
-    if (
-        np.min(xref_m) < 1e-4
-        or np.max(xref_m) > 10000
-        or np.min(yref_m) < 1e-4
-        or np.max(yref_m) > 10000
-    ):
-        scaling = True
-        xref_s, yref_s = xref.std(axis=0), yref.std(axis=0)
-        xref_s[xref_s < 1e-9] = 1
-        yref_s[yref_s < 1e-9] = 1
-        x = np.divide(x, xref_s)
-        y = np.divide(y, yref_s)
-        xref = np.divide(xref, xref_s)
-        yref = np.divide(yref, yref_s)
-    else:
-        scaling = False
-        xref_s = yref_s = None
-
+    scaling, xref_s, yref_s = apply_scaling(x=x, y=y, xref=xref, yref=yref)
     se = _solve_slack(
         x=x, y=y, e=copy.deepcopy(e), xref=xref, yref=yref, rts=rts
     )

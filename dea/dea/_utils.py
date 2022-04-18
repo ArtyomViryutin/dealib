@@ -1,10 +1,12 @@
 __all__ = [
+    "prepare_data",
+    "apply_scaling",
     "construct_lpp",
     "process_result_efficiency",
     "validate_data",
 ]
 
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -12,7 +14,88 @@ from numpy.typing import NDArray
 from dea.linprog import LPP
 
 from ._options import RTS, Orientation
+from ._types import DIRECTION, MATRIX
 from ._wrappers import Efficiency
+
+
+def prepare_data(
+    x: MATRIX,
+    y: MATRIX,
+    xref: MATRIX,
+    yref: MATRIX,
+    transpose: bool = False,
+    orientation: Optional[Orientation] = None,
+    direct: Optional[DIRECTION] = None,
+) -> Tuple[NDArray[float], ...]:
+    x = np.array(x, dtype=float, copy=True)
+    y = np.array(y, dtype=float, copy=True)
+
+    if xref is None:
+        xref = x.copy()
+    else:
+        xref = np.array(xref, dtype=float, copy=True)
+
+    if yref is None:
+        yref = y.copy()
+    else:
+        yref = np.array(yref, dtype=float, copy=True)
+
+    if direct is not None and not isinstance(direct, str):
+        if isinstance(direct, list) or isinstance(direct, np.ndarray):
+            direct = np.array(direct, dtype=float, copy=True)
+        else:
+            if orientation == Orientation.input:
+                direct = np.full(x.shape[1], direct)
+            else:
+                direct = np.full(y.shape[1], direct)
+
+    if transpose is True:
+        x = x.transpose()
+        y = y.transpose()
+        xref = xref.transpose()
+        yref = yref.transpose()
+
+        if (
+            direct is not None
+            and isinstance(direct, np.ndarray)
+            and direct.ndim > 1
+        ):
+            direct = direct.transpose()
+    return x, y, xref, yref, direct
+
+
+def apply_scaling(
+    x: NDArray[float],
+    y: NDArray[float],
+    xref: NDArray[float],
+    yref: NDArray[float],
+    orientation: Optional[Orientation] = None,
+    direct: Optional[NDArray[float]] = None,
+) -> Tuple[bool, NDArray[float], NDArray[float]]:
+    xref_m, yref_m = xref.mean(axis=0), yref.mean(axis=0)
+    if (
+        np.min(xref_m) < 1e-4
+        or np.max(xref_m) > 10000
+        or np.min(yref_m) < 1e-4
+        or np.max(yref_m) > 10000
+    ):
+        scaling = True
+        xref_s, yref_s = xref.std(axis=0), yref.std(axis=0)
+        xref_s[xref_s < 1e-9] = 1
+        yref_s[yref_s < 1e-9] = 1
+        np.divide(x, xref_s, out=x)
+        np.divide(y, yref_s, out=y)
+        np.divide(xref, xref_s, out=xref)
+        np.divide(yref, yref_s, out=yref)
+        if isinstance(direct, np.ndarray):
+            if orientation == Orientation.input:
+                np.divide(direct, xref_s, out=direct)
+            else:
+                np.divide(direct, yref_s, out=direct)
+    else:
+        scaling = False
+        xref_s = yref_s = None
+    return scaling, xref_s, yref_s
 
 
 def construct_lpp(
