@@ -44,3 +44,27 @@ def test_dea(rts, orientation, folder_name, mismatches, two_phase):
     assert np.count_nonzero(
         np.abs(ref_slack - eff.slack) > threshold
     ) <= mismatches * (m + n)
+
+
+# @parametrize_options(RTS, "rts")
+# @parametrize_options(Orientation, "orientation")
+# @pytest.mark.parametrize(
+#     "folder_name, mismatches",
+#     [["simple", 0], ["charnes", 1]],
+#     ids=["simple", "charnes"],
+# )
+# def test_dea_ux_yv(rts, orientation, folder_name, mismatches):
+#     x, y = get_data(folder_name)
+#     reference = get_reference("dea_ux_yv", f"{folder_name}.json")
+#     eff = dea(
+#         x,
+#         y,
+#         rts=rts,
+#         orientation=orientation,
+#     )
+#     ref = reference[orientation.name][rts.name]
+#     ref_ux = np.asarray(ref["ux"], dtype=float)
+#     ref_vy = np.asarray(ref["yv"], dtype=float)
+#
+#     assert np.count_nonzero(np.abs(eff.ux - ref_ux) > 1e-4) <= mismatches
+#     assert np.count_nonzero(np.abs(eff.vy - ref_vy) > 1e-4) <= mismatches

@@ -177,7 +177,8 @@ def simplex(
     )
     solution = np.zeros(n)
     solution[basis[:m]] = T[:m, -1]
+    dual = T[-1, -(init_m + 1) : -1]
     x = solution[:init_n]
     slack = solution[init_n:]
     f = T[-1, -1]
-    return LPPResult(f=f, x=x, slack=slack)
+    return LPPResult(f=f, x=x, slack=slack, dual=dual)

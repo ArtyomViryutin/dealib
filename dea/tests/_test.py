@@ -39,6 +39,9 @@ def get_data(name: str):
 
 
 if __name__ == "__main__":
-    x, y = get_data("charnes")
-    eff = sdea(x, y, rts=RTS.vrs, orientation=Orientation.output)
-    print(eff.eff)
+    x, y = get_data("banks1")
+    # x = [[20], [40], [40], [60], [70], [50]]
+    # y = [[20], [30], [50], [40], [60], [20]]
+    eff = dea(x, y, rts="vrs")
+    print(eff.ux)
+    print(eff.vy)

@@ -2,7 +2,6 @@ __all__ = ["Efficiency", "Malmquist"]
 
 from dataclasses import dataclass
 
-import numpy as np
 from numpy.typing import NDArray
 
 from ._options import RTS, Orientation

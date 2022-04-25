@@ -127,18 +127,18 @@ def construct_lpp(
     return lpp
 
 
-def process_result_efficiency(e: Efficiency, eps: float = 1e-5) -> None:
+def process_result_efficiency(e: Efficiency, tol: float = 1e-5) -> None:
     if e.lambdas is not None:
         e.lambdas[e.lambdas < 0] = np.nan
-        e.lambdas[np.abs(e.lambdas) < eps] = 0
-        e.lambdas[np.abs(e.lambdas - 1) < eps] = 1
+        e.lambdas[np.abs(e.lambdas) < tol] = 0
+        e.lambdas[np.abs(e.lambdas - 1) < tol] = 1
 
     e.slack[e.slack < 0] = np.nan
-    e.slack[np.abs(e.slack) < eps] = 0
+    e.slack[np.abs(e.slack) < tol] = 0
 
     e.eff[e.eff < 0] = np.nan
-    e.eff[np.abs(e.eff) < eps] = 0
-    e.eff[np.abs(e.eff - 1) < eps] = 1
+    e.eff[np.abs(e.eff) < tol] = 0
+    e.eff[np.abs(e.eff - 1) < tol] = 1
 
 
 def validate_data(

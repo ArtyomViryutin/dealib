@@ -11,6 +11,7 @@ class LPPResult:
     f: float
     x: NDArray[float]
     slack: NDArray[float]
+    dual: NDArray[float]
 
 
 @dataclass

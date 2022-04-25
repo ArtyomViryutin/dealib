@@ -117,6 +117,8 @@ def _solve_dea(
         slack=np.zeros((k, m + n)),
         sx=np.zeros((k, m)),
         sy=np.zeros((k, n)),
+        ux=np.zeros((k, m)),
+        vy=np.zeros((k, n)),
         transpose=transpose,
     )
     for i in range(k):
@@ -158,6 +160,14 @@ def _solve_dea(
             lpp_result = simplex(lpp, opt_f=True, opt_slacks=True)
 
         e.objval[i] = lpp_result.x[-1]
+
+        if orientation == Orientation.input:
+            sign = 1
+        else:
+            sign = -1
+        e.ux[i] = sign * lpp_result.dual[:m]
+        e.vy[i] = sign * lpp_result.dual[m : m + n]
+
         e.lambdas[i] = lpp_result.x[:-1]
 
         e.sx[i] = lpp_result.slack[:m]
@@ -260,6 +270,8 @@ def dea(
         e.sx = np.multiply(e.sx, xref_s)
         e.sy = np.multiply(e.sy, yref_s)
         e.slack = np.multiply(e.slack, np.hstack((xref_s, yref_s)))
+        e.ux = np.divide(e.ux, xref_s)
+        e.vy = np.divide(e.vy, yref_s)
 
         if isinstance(e.direct, np.ndarray):
             if orientation == Orientation.input:
