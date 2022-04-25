@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from .wrappers import LPP, LPPResult
+from ._wrappers import LPP, LPPResult
 
 
 def _pivot_col(
@@ -180,4 +180,4 @@ def simplex(
     x = solution[:init_n]
     slack = solution[init_n:]
     f = T[-1, -1]
-    return LPPResult(f, x, slack)
+    return LPPResult(f=f, x=x, slack=slack)

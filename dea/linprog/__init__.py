@@ -1,2 +1,2 @@
-from .simplex import *
-from .wrappers import *
+from ._simplex import *
+from ._wrappers import *

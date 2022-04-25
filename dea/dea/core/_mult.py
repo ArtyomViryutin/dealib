@@ -7,8 +7,7 @@ from numpy.typing import NDArray
 
 from dea.dea._options import RTS, Orientation
 from dea.dea._wrappers import Efficiency
-from dea.linprog import simplex
-from dea.linprog.wrappers import LPP
+from dea.linprog import LPP, simplex
 
 from .._types import MATRIX, ORIENTATION_T, RTS_T
 from .._utils import (

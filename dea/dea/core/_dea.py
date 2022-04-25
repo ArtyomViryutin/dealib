@@ -184,6 +184,38 @@ def dea(
     two_phase: bool = False,
     transpose: bool = False,
 ) -> Efficiency:
+    """
+    Estimates a DEA frontier and calculates Farrell efficiency measures.
+
+    :param x: Inputs of firm to be evaluated. (k, m) matrix of observations of k firms with m inputs. In case
+        transpose=True the input matrix is transposed
+    :param y: Outputs of firm to be evaluated. (k, n) matrix of observations of k firms with n outputs. In case
+        transpose=True the output matrix is transposed
+    :param rts:
+        Text string or number defining the underlying DEA technology / returns to scale assumption
+        // 0 vrs - Variable returns to scale
+        // 1 crs - Constant returns to scale
+        // 2 drs - Decreasing returns to scale
+        // 3 irs -  Increasing returns to scale
+    :param orientation: Text string or number defining the DEA efficiency
+        // 0 input - Input efficiency
+        // 1 output - Output efficiency
+    :param xref: Inputs of the firms determining the technology, defaults to `x`
+    :param yref: Outputs of the firms determining the technology, defaults to `y`
+    :param direct: Directional efficiency, direct is either a scalar, an array, or a matrix with nonnegative elements.
+    :param two_phase: Flag determining slack optimization either one or two phase
+    :param transpose: Flag determining if input and output matrix are transposed. See `x`, `y`.
+    :return: Efficiency object
+
+    Example
+    --------
+    >>> x = [[], [], [], []]
+    >>> y = [[], [], [], []]
+    >>> eff = dea(x, y, rts="vrs", orientation="input")
+    >>> print(eff.eff)
+    [1, 2, 3]
+    """
+
     rts = RTS.get(rts)
     orientation = Orientation.get(orientation)
 
