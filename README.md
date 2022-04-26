@@ -1,14 +1,43 @@
-# DEA
-Implements basic DEA models with Orientation and RTS extensions.
+## Project description
+
+**python-DEA** is a library developed in Python for conducting Data Envelopment Analysis (DEA).
+
+User documentation can be found []
+
+Library provides following models and options:
+
+Models:
+
+1) `Envelopment model`
+2) `Multiplier model`
+3) `Slack model`
+4) `Additive model`
+5) `Super-efficiency model`
+6) `Direct model`
+7) `Multi-directional model`
+
+Orientation:
+
+1) `Input`
+2) `Output`
+
+Returns to scale (RTS):
+
+1) `Variable returns to scale (VRS)`
+2) `Constant returns to scale (CRS)`
+3) `Decreasing returns to scale (DRS)`
+4) `Increasing returns to scale (IRS)`
+
+## Source
+
+The latest version can be found at [https://github.com/ArtyomViryutin/DEA]()
 
 ## Installation
 
-`git clone https://github.com/ArtyomViryutin/DEA.git`
+### Using pip
 
-## Requirements
+    pip install python-dea
 
-`pip install -r requirements.txt`
+### Using git
 
-## Usage
-
-See `example.py` for usage.
+    git clone https://github.com/ArtyomViryutin/DEA.git
