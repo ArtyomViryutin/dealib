@@ -20,6 +20,18 @@ class BaseEnum(enum.Enum):
 
 
 class RTS(BaseEnum):
+    """
+    Class to configure returns to scale assumption.
+
+    **vrs** - Variable returns to scale
+
+    **crs** - Constant returns to scale
+
+    **drs** - Decreasing returns to scale
+
+    **irs** - Increasing returns to scale
+    """
+
     vrs = 0
     crs = 1
     drs = 2
@@ -27,5 +39,13 @@ class RTS(BaseEnum):
 
 
 class Orientation(BaseEnum):
+    """
+    Class to configure efficiency orientation.
+
+    **input** - input efficiency
+
+    **output** - output efficiency
+    """
+
     input = 0
     output = 1

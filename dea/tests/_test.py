@@ -39,9 +39,10 @@ def get_data(name: str):
 
 
 if __name__ == "__main__":
-    x, y = get_data("banks1")
-    # x = [[20], [40], [40], [60], [70], [50]]
-    # y = [[20], [30], [50], [40], [60], [20]]
-    eff = dea(x, y, rts="vrs")
-    print(eff.ux)
-    print(eff.vy)
+    # x, y = get_data("banks1")
+    x0 = [[10], [28], [30], [60]]
+    y0 = [[5], [7], [10], [15]]
+    x1 = [[12], [26], [16], [60]]
+    y1 = [[6], [8], [9], [15]]
+    eff = malmq(x0, y0, x1, y1)
+    print(eff.m)

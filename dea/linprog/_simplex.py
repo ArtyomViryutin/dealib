@@ -148,6 +148,42 @@ def simplex(
     eps: Optional[float] = 1e-6,
     tol: Optional[float] = 1e-9,
 ) -> LPPResult:
+    """
+    Solves the given linear programming problem.
+
+    :param LPP lpp: Linear programming problem.
+
+    :param bool opt_f: Flag that determines whether to optimize the objective function.
+
+    :param bool opt_slacks: Flag that determines whether to optimize the slack variables.
+
+    :param int maxiter: Maximal number of iteration.
+
+    :param float eps: Float number for slack optimization.
+
+    :param float tol: Tolerance for LPP solving.
+
+    :return: LPP solution.
+    :rtype: LPPResult
+
+
+    **Example**
+
+    >>> c = np.array([3, 2])
+    >>> A_ub = np.array([[2, 1], [-1, -3]])
+    >>> b_ub = np.array([50, -15])
+    >>> A_eq = np.array([[5, 6]])
+    >>> b_eq = np.array([60])
+    >>> lpp_result = LPP(c, A_ub, b_ub, A_eq, b_eq)
+    >>> result = simplex(lpp)
+    >>> print(lpp_result.f)
+    33.333333
+    >>> print(lpp_result.x)
+    [10, 1.666667]
+    >>> print(lpp_result.slack)
+    [28.333333, 0]
+    """
+
     init_m, init_n = lpp.A_ub.shape
     A, b, c = _get_canonical_form(
         lpp=lpp, opt_f=opt_f, opt_slacks=opt_slacks, eps=eps

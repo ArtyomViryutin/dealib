@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dea"
-version = "1.0.2"
+version = "1.0.3"
 description = "Library for basic Data Envelopment Analysis (DEA)"
 authors = ["Artyom Viryutin <avviryutin@edu.hse.ru>"]
 license = "MIT"

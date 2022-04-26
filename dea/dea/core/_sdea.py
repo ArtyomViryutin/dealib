@@ -4,10 +4,10 @@ from typing import Optional
 
 import numpy as np
 
-from .._options import RTS, Orientation
-from .._types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
-from .._utils import validate_data
-from .._wrappers import Efficiency
+from ..utils.options import RTS, Orientation
+from ..utils.types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
+from ..utils.utils import validate_data
+from ..utils.wrappers import Efficiency
 from ._dea import dea
 
 
@@ -19,6 +19,50 @@ def sdea(
     direct: Optional[DIRECTION] = None,
     transpose: bool = False,
 ) -> Efficiency:
+    """
+    Estimates a DEA frontier and calcilates super-efficiency measures.
+
+    :param 2-d array x: Inputs of firm to be evaluated. `(k, m)` matrix of observations of `k` firms with `m` inputs.
+        In case `transpose=True` the input matrix is transposed.
+
+    :param 2-d array y: Outputs of firm to be evaluated. `(k, n)` matrix of observations of `k` firms with `n` outputs.
+        In case `transpose=True` the output matrix is transposed.
+
+    :param int, str, RTS rts:
+        Returns to scale assumption.
+
+        `0 vrs` - Variable returns to scale
+
+        `1 crs` - Constant returns to scale
+
+        `2 drs` - Decreasing returns to scale
+
+        `3 irs` -  Increasing returns to scale
+
+    :param int, str, Orientation orientation: Efficiency orientation.
+
+        `0 input` - Input efficiency
+
+        `1 output` - Output efficiency
+
+    :param float, 1-d array, 2-d array direct: Directional efficiency, direct is either a scalar, an array, or a matrix
+        with nonnegative elements.
+
+    :param bool transpose: Flag determining if input and output matrix are transposed. See :mod:`x`, :mod:`y`.
+
+    :return: Result efficiency object.
+    :rtype: Efficiency
+
+
+    **Example**
+
+    >>> x = [[20], [40], [40], [40], [60], [70], [50]]
+    >>> y = [[20], [30], [50], [40], [60], [20]]
+    >>> eff = sdea(x, y, rts="vrs", orientation="input")
+    >>> print(eff.eff)
+    [2.         0.66666667 1.4375     0.55555556 0.66666667 0.4       ]
+    """
+
     rts = RTS.get(rts)
     orientation = Orientation.get(orientation)
 

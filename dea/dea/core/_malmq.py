@@ -4,10 +4,9 @@ from typing import Optional
 
 import numpy as np
 
-from dea.dea._types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
-
-from .._options import RTS, Orientation
-from .._wrappers import Malmquist
+from ..utils.options import RTS, Orientation
+from ..utils.types import DIRECTION, MATRIX, ORIENTATION_T, RTS_T
+from ..utils.wrappers import Malmquist
 from ._dea import dea
 
 
@@ -22,6 +21,59 @@ def malmq(
     direct: Optional[DIRECTION] = None,
     transpose: bool = False,
 ) -> Malmquist:
+    """
+    Estimates Malmquist indices between two periods.
+
+    :param 2-d array x0: Inputs of firm to be evaluated. `(k, m)` matrix of observations of `k` firms with `m` inputs.
+        In case `transpose=True` the input matrix is transposed.
+
+    :param 2-d array y0: Outputs of firm to be evaluated. `(k, n)` matrix of observations of `k` firms with `n` outputs.
+        In case `transpose=True` the output matrix is transposed.
+
+    :param 2-d array x1: Inputs of firm to be evaluated. `(k, m)` matrix of observations of `k` firms with `m` inputs.
+        In case `transpose=True` the input matrix is transposed.
+
+    :param 2-d array y1: Outputs of firm to be evaluated. `(k, n)` matrix of observations of `k` firms with `n` outputs.
+        In case `transpose=True` the output matrix is transposed.
+
+    :param int, str, RTS rts:
+        Returns to scale assumption.
+
+        `0 vrs` - Variable returns to scale
+
+        `1 crs` - Constant returns to scale
+
+        `2 drs` - Decreasing returns to scale
+
+        `3 irs` -  Increasing returns to scale
+
+    :param int, str, Orientation orientation: Efficiency orientation.
+
+        `0 input` - Input efficiency
+
+        `1 output` - Output efficiency
+
+    :param float, 1-d array, 2-d array direct: Directional efficiency, direct is either a scalar, an array, or a matrix
+        with nonnegative elements.
+
+    :param bool transpose: Flag determining if input and output matrix are transposed. See :mod:`x0`, :mod:`y0`,
+        :mod:`x1`, :mod:`y1`.
+
+    :return: Result malmquist object.
+    :rtype: Malmquist
+
+
+    **Example**
+
+    >>> x0 = [[10], [28], [30], [60]]
+    >>> y0 = [[5], [7], [10], [15]]
+    >>> x1 = [[12], [26], [16], [60]]
+    >>> y1 = [[6], [8], [9], [15]]
+    >>> ma = malmq(x0, y0, x1, y1)
+    >>> print(ma.m)
+    [0.9860133  1.24869426 1.44543617 1.        ]
+    """
+
     e00 = dea(
         x=x0,
         y=y0,

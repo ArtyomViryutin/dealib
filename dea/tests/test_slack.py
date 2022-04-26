@@ -33,6 +33,6 @@ def test_slack(rts, orientation, folder_name):
         sx=np.zeros((k, m)),
         sy=np.zeros((k, n)),
     )
-    sl_eff = slack(x, y, e, rts=rts)
+    sl_eff = slack(x, y, e)
     threshold = np.mean(ref_slack) * 1e-4
     assert np.count_nonzero(np.abs(ref_slack - sl_eff.slack) > threshold) == 0

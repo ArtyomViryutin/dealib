@@ -13,9 +13,9 @@ from numpy.typing import NDArray
 
 from dea.linprog import LPP
 
-from ._options import RTS, Orientation
-from ._types import DIRECTION, MATRIX
-from ._wrappers import Efficiency
+from .options import RTS, Orientation
+from .types import DIRECTION, MATRIX
+from .wrappers import Efficiency
 
 
 def prepare_data(

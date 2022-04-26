@@ -6,18 +6,18 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from dea.dea._options import RTS, Orientation
-from dea.dea._wrappers import Efficiency
 from dea.linprog import LPP, simplex
 
-from .._types import MATRIX, RTS_T
-from .._utils import (
+from ..utils.options import RTS, Orientation
+from ..utils.types import MATRIX
+from ..utils.utils import (
     apply_scaling,
     construct_lpp,
     prepare_data,
     process_result_efficiency,
     validate_data,
 )
+from ..utils.wrappers import Efficiency
 
 
 def _construct_slack_lpp(
@@ -31,7 +31,6 @@ def _solve_slack(
     x: NDArray[float],
     y: NDArray[float],
     e: Efficiency,
-    rts: RTS,
     xref: NDArray[float],
     yref: NDArray[float],
 ) -> Efficiency:
@@ -39,7 +38,7 @@ def _solve_slack(
     n = yref.shape[1]
     k = xref.shape[0]
 
-    lpp = _construct_slack_lpp(xref=xref, yref=yref, rts=rts)
+    lpp = _construct_slack_lpp(xref=xref, yref=yref, rts=e.rts)
 
     for i in range(k):
         lpp.b_ub[:m] = x[i]
@@ -65,11 +64,47 @@ def slack(
     y: MATRIX,
     e: Efficiency,
     *,
-    rts: RTS_T = RTS.vrs,
     xref: Optional[MATRIX] = None,
     yref: Optional[MATRIX] = None,
     transpose: Optional[bool] = False,
 ) -> Efficiency:
+    """
+    Estimats a DEA frontier and optimize slacks.
+
+    :param 2-d array x: Inputs of firm to be evaluated. `(k, m)` matrix of observations of `k` firms with `m` inputs.
+        In case `transpose=True` the input matrix is transposed.
+
+    :param 2-d array y: Outputs of firm to be evaluated. `(k, n)` matrix of observations of `k` firms with `n` outputs.
+        In case `transpose=True` the output matrix is transposed.
+
+    :param Efficiency e: Efficiency object returned by :ref:`dea<dea.dea.core._dea.dea>`,
+        :ref:`add<dea.dea.core._add.add>`, :ref:`direct<dea.dea.core._direct.direct>`,
+        :ref:`mea<dea.dea.core._mea.mea>`.
+
+    :param 2-d array xref: Inputs of the firms determining the technology, defaults to :mod:`x`.
+
+    :param 2-d array yref: Outputs of the firms determining the technology, defaults to :mod:`y`.
+
+    :param bool transpose: Flag determining if input and output matrix are transposed. See :mod:`x`, :mod:`y`.
+
+    :return: Result efficiency object.
+    :rtype: Efficiency
+
+
+    **Example**
+
+    >>> x = [[1, 5], [2, 2], [4, 1], [6, 1], [4, 4]]
+    >>> y = [[2], [2], [2], [2], [2]]
+    >>> e = dea(x, y, rts="vrs", orientation="input")
+    >>> eff = slack(x, y, e)
+    >>> print(eff.slack)
+        [[0. 0. 0.]
+         [0. 0. 0.]
+         [0. 0. 0.]
+         [2. 0. 0.]
+         [0. 0. 0.]]
+    """
+
     x, y, xref, yref, _ = prepare_data(
         x=x, y=y, xref=xref, yref=yref, transpose=transpose
     )
@@ -77,9 +112,7 @@ def slack(
     validate_data(x=x, y=y, xref=xref, yref=yref)
 
     scaling, xref_s, yref_s = apply_scaling(x=x, y=y, xref=xref, yref=yref)
-    se = _solve_slack(
-        x=x, y=y, e=copy.deepcopy(e), xref=xref, yref=yref, rts=rts
-    )
+    se = _solve_slack(x=x, y=y, e=copy.deepcopy(e), xref=xref, yref=yref)
 
     if scaling is True:
         se.sx = np.multiply(se.sx, xref_s)
