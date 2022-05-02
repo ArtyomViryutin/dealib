@@ -174,13 +174,13 @@ def simplex(
     >>> b_ub = np.array([50, -15])
     >>> A_eq = np.array([[5, 6]])
     >>> b_eq = np.array([60])
-    >>> lpp_result = LPP(c, A_ub, b_ub, A_eq, b_eq)
+    >>> lpp = LPP(c, A_ub, b_ub, A_eq, b_eq)
     >>> result = simplex(lpp)
-    >>> print(lpp_result.f)
+    >>> print(result.f)
     33.333333
-    >>> print(lpp_result.x)
+    >>> print(result.x)
     [10, 1.666667]
-    >>> print(lpp_result.slack)
+    >>> print(result.slack)
     [28.333333, 0]
     """
 
