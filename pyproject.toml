@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "dea"
-version = "1.0.3"
-description = "Library for basic Data Envelopment Analysis (DEA)"
+name = "dealib"
+version = "1.0.0"
+description = "Library developed in Python for conducting Data Envelopment Analysis (DEA)."
 authors = ["Artyom Viryutin <avviryutin@edu.hse.ru>"]
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/ArtyomViryutin/DEA"
 repository = "https://github.com/ArtyomViryutin/DEA"
-keywords = ["benchmarking", "DEA"]
+keywords = ["benchmarking", "data", "envelopment", "analysis", "DEA"]
 
 [tool.poetry.dependencies]
 python = "^3.8"

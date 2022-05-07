@@ -9,7 +9,6 @@ dealib documentation
 *dealib* is a library developed in Python for conducting Data Envelopment Analysis (DEA).
 
 Contents:
---------
 
 .. toctree::
    :maxdepth: 4

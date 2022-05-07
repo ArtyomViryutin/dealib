@@ -1,8 +1,8 @@
 ## Project description
 
-**python-DEA** is a library developed in Python for conducting Data Envelopment Analysis (DEA).
+**dealib** is a library developed in Python for conducting Data Envelopment Analysis (DEA).
 
-User documentation can be found []
+User documentation can be found [https://artyomviryutin.github.io/dealib]().
 
 Library provides following models and options:
 
@@ -30,14 +30,14 @@ Returns to scale (RTS):
 
 ## Source
 
-The latest version can be found at [https://github.com/ArtyomViryutin/DEA]()
+The latest version can be found at [https://github.com/ArtyomViryutin/dealib]()
 
 ## Installation
 
 ### Using pip
 
-    pip install python-dea
+    pip install dealib
 
 ### Using git
 
-    git clone https://github.com/ArtyomViryutin/DEA.git
+    git clone https://github.com/ArtyomViryutin/dealib.git

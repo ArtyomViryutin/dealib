@@ -1,5 +1,4 @@
 import numpy as np
-
 from dea import RTS, Orientation, dea
 
 # Data from Benchmarking 4.6.1 Numerical example in R

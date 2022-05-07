@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.abspath("../dea/linprog/_simplex.py"))
 
 # -- Project information -----------------------------------------------------
 
-project = "python-dea"
+project = "dealib"
 copyright = "2022, Artyom Viryutin"
 author = "Artyom Viryutin"
 
