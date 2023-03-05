@@ -2,7 +2,7 @@
 
 **dealib** is a library developed in Python for conducting Data Envelopment Analysis (DEA).
 
-User documentation can be found [https://artyomviryutin.github.io/dealib]().
+For more details see [documentation](https://artyomviryutin.github.io/dealib).
 
 Library provides following models and options:
 
@@ -30,7 +30,7 @@ Returns to scale (RTS):
 
 ## Source
 
-The latest version can be found at [https://github.com/ArtyomViryutin/dealib]()
+The latest version can be found [here](https://github.com/ArtyomViryutin/dealib)
 
 ## Installation
 
