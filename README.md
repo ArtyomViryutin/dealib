@@ -1,4 +1,4 @@
-## Project description
+## Data Envelopment Analysis
 
 **dealib** is a library developed in Python for conducting Data Envelopment Analysis (DEA).
 
